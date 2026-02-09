@@ -1,0 +1,38 @@
+{
+  "name": "crypto-news-telegram-bot",
+  "version": "1.0.0",
+  "description": "A monorepo for a crypto news Telegram bot",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run start:dev --workspace=@crypto-news-bot/backend",
+    "dev:frontend": "npm run dev --workspace=@crypto-news-bot/frontend",
+    "build": "npm run build --workspaces --if-present",
+    "build:backend": "npm run build --workspace=@crypto-news-bot/backend",
+    "build:frontend": "npm run build --workspace=@crypto-news-bot/frontend",
+    "start": "npm run start --workspaces --if-present",
+    "start:backend": "npm run start --workspace=@crypto-news-bot/backend",
+    "start:frontend": "npm run start --workspace=@crypto-news-bot/frontend",
+    "docker:up": "docker-compose -f infra/docker/docker-compose.yml up -d",
+    "docker:down": "docker-compose -f infra/docker/docker-compose.yml down",
+    "docker:build": "docker-compose -f infra/docker/docker-compose.yml build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "keywords": [
+    "monorepo",
+    "nestjs",
+    "nextjs",
+    "telegram",
+    "bot",
+    "crypto",
+    "news"
+  ],
+  "author": "",
+  "license": "MIT"
+}

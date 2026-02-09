@@ -1,0 +1,39 @@
+{
+  // Конфигурация компилятора TypeScript для NestJS приложения
+  "compilerOptions": {
+    // Тип модуля для генерации
+    "module": "commonjs",
+    // Генерировать файлы объявлений (.d.ts)
+    "declaration": true,
+    // Удалять комментарии из выходных файлов
+    "removeComments": true,
+    // Выпускать декораторы метаданных
+    "emitDecoratorMetadata": true,
+    // Включить экспериментальную поддержку декораторов
+    "experimentalDecorators": true,
+    // Позволить синтетические значения по умолчанию для не CommonJS модулей
+    "allowSyntheticDefaultImports": true,
+    // Целевая версия ECMAScript для компиляции
+    "target": "ES2021",
+    // Генерировать sourcemaps
+    "sourceMap": true,
+    // Каталог вывода для скомпилированных файлов
+    "outDir": "./dist",
+    // Базовый каталог для разрешения не абсолютных имен модулей
+    "baseUrl": "./",
+    // Включить инкрементальную компиляцию
+    "incremental": true,
+    // Пропустить проверку типов в node_modules
+    "skipLibCheck": true,
+    // Включить строгую проверку null/undefined (отключено для совместимости)
+    "strictNullChecks": false,
+    // Не разрешать неявный тип any (отключено для совместимости)
+    "noImplicitAny": false,
+    // Не проверять вызовы bind/call/apply
+    "strictBindCallApply": false,
+    // Не требовать согласованное написание имен файлов
+    "forceConsistentCasingInFileNames": false,
+    // Проверять, что в switch операторах нет fallthrough случаев
+    "noFallthroughCasesInSwitch": false
+  }
+}

@@ -1,0 +1,63 @@
+{
+  // Конфигурация компилятора TypeScript для Next.js приложения
+  "compilerOptions": {
+    // Целевая версия ECMAScript для компиляции
+    "target": "es5",
+    // Библиотеки JavaScript для включения в компиляцию
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es6"
+    ],
+    // Разрешить компиляцию JavaScript файлов
+    "allowJs": true,
+    // Пропустить проверку типов в node_modules
+    "skipLibCheck": true,
+    // Включить строгую проверку типов
+    "strict": true,
+    // Не генерировать JavaScript файлы
+    "noEmit": true,
+    // Включить интероп esModule
+    "esModuleInterop": true,
+    // Тип модуля для генерации
+    "module": "esnext",
+    // Стратегия разрешения модулей
+    "moduleResolution": "bundler",
+    // Разрешить импорт JSON модулей
+    "resolveJsonModule": true,
+    // Изолировать модули
+    "isolatedModules": true,
+    // Тип JSX для компиляции
+    "jsx": "react-jsx",
+    // Включить инкрементальную компиляцию
+    "incremental": true,
+    // Плагины TypeScript
+    "plugins": [
+      {
+        // Плагин для поддержки Next.js
+        "name": "next"
+      }
+    ],
+    // Базовый путь для разрешения путей
+    "baseUrl": ".",
+    // Псевдонимы для путей
+    "paths": {
+      // Позволяет использовать @/ для обращения к src/*
+      "@/*": [
+        "./src/*"
+      ]
+    }
+  },
+  // Файлы для включения в компиляцию
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
+  // Исключить из компиляции
+  "exclude": [
+    "node_modules"
+  ]
+}
