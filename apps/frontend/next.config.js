@@ -16,5 +16,5 @@ const nextConfig = {
   output: 'standalone',
 };
 
-// Экспорт конфигурации
-module.exports = nextConfig;
+// Экспорт конфигурации в формате ES module
+export default nextConfig;
