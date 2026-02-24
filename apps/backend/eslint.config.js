@@ -3,16 +3,12 @@
 
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
-import nestjs from '@nestjs/eslint-plugin';
 
 export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
     files: ['**/*.ts'],
-    plugins: {
-      '@nestjs': nestjs,
-    },
     rules: {
       '@typescript-eslint/interface-name-prefix': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',

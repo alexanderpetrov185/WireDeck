@@ -3,7 +3,7 @@
 
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
-import next from '@next/eslint-plugin-next';
+import nextPlugin from '@next/eslint-plugin-next';
 
 export default tseslint.config(
   eslint.configs.recommended,
@@ -11,7 +11,7 @@ export default tseslint.config(
   {
     files: ['**/*.{ts,tsx}'],
     plugins: {
-      '@next/next': next,
+      '@next/next': nextPlugin,
     },
     rules: {
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
@@ -23,5 +23,8 @@ export default tseslint.config(
         tsconfigRootDir: import.meta.dirname,
       },
     },
+  },
+  {
+    ignores: ['node_modules', '.next', 'out', 'build'],
   }
 );
