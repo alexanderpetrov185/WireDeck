@@ -1,0 +1,58 @@
+# Backend .dockerignore для монорепозитория
+
+# Зависимости
+node_modules
+**/node_modules
+
+# Сборка
+dist
+.next
+build
+
+# Логи
+logs
+*.log
+
+# Окружение
+.env
+.env.local
+.env.*.local
+
+# Редакторы
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Тесты
+coverage
+*.test.ts
+*.spec.ts
+test
+tests
+
+# Документация
+*.md
+README*
+docs
+
+# Frontend файлы (не нужны для backend)
+apps/frontend/**
+**/*.css
+**/*.tsx
+
+# Shared пакеты если не используются
+# packages/**

@@ -1,0 +1,69 @@
+# Корневой .dockerignore для монорепозитория
+
+# Зависимости
+node_modules
+**/node_modules
+
+# Сборка
+dist
+.next
+build
+out
+
+# Логи
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Окружение
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Редакторы
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Docker
+docker-compose*.yml
+!infra/docker/docker-compose.yml
+
+# Тесты
+coverage
+.nyc_output
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Документация
+*.md
+README*
+docs
+CHANGELOG*
+LICENSE
+
+# Скрипты
+scripts
+
+# Временные файлы
+tmp
+temp
+.cache

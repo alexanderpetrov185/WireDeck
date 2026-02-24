@@ -1,27 +1,43 @@
+# Backend Dockerfile для монорепозитория
+# Сборка NestJS приложения с поддержкой workspace
+
 FROM node:22-alpine AS builder
 
+# Установка рабочей директории
 WORKDIR /app
 
-COPY package*.json ./
-COPY apps/backend/package*.json ./apps/backend/
+# Копируем корневые файлы зависимостей для кэширования npm
+COPY package.json package-lock.json* ./
+COPY apps/backend/package.json ./apps/backend/
 
+# Копируем tsconfig.json для компиляции TypeScript
+COPY apps/backend/tsconfig.json ./apps/backend/
+
+# Установка зависимостей с флагом --legacy-peer-deps для обхода конфликтов
 RUN npm ci --legacy-peer-deps
 
-COPY apps/backend/ ./apps/backend/
-COPY tsconfig.json ./
+# Копируем исходный код backend
+COPY apps/backend/src ./apps/backend/src
 
+# Сборка backend приложения
 RUN npm run build --workspace=@crypto-news-bot/backend
 
+# Production стадия
 FROM node:22-alpine AS production
 
 WORKDIR /app
 
+# Копируем только необходимые файлы для запуска
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/apps/backend/package*.json ./apps/backend/
+COPY --from=builder /app/apps/backend/package.json ./apps/backend/
+COPY --from=builder /app/package.json ./
 
+# Создаем директорию для логов
+RUN mkdir -p /app/logs
+
+# Порт приложения
 EXPOSE 3000
 
-CMD ["npm", "run", "start:prod", "--workspace=@crypto-news-bot/backend"]
+# Запуск приложения
+CMD ["node", "apps/backend/dist/main.js"]
