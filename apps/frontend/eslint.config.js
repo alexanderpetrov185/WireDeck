@@ -25,6 +25,17 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ['node_modules', '.next', 'out', 'build'],
+    // Игнорировать конфигурационные файлы и служебные директории
+    ignores: ['node_modules', '.next', 'out', 'build', '*.config.js', '*.config.mjs', '*.config.cjs'],
+  },
+  {
+    // Разрешить process и module для .config.js файлов
+    files: ['**/*.config.js'],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+        module: 'readonly',
+      },
+    },
   }
 );
