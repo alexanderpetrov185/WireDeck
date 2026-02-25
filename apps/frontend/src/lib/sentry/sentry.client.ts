@@ -72,18 +72,3 @@ export function setClientUser(userId: string, email?: string) {
 export function setClientTag(key: string, value: string) {
   Sentry.setTag(key, value);
 }
-
-// HOC для отслеживания ошибок в компонентах
-export function withSentry<P extends object>(
-  WrappedComponent: React.ComponentType<P>,
-  componentName: string
-) {
-  return function SentryWrappedComponent(props: P) {
-    try {
-      return <WrappedComponent {...props} />;
-    } catch (error) {
-      captureClientException(error as Error, { component: componentName });
-      throw error;
-    }
-  };
-}

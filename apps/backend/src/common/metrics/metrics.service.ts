@@ -50,6 +50,6 @@ export class MetricsService {
 
   // Получение количества метрик (для отладки)
   getMetricsCount(): number {
-    return register.size;
+    return Object.keys((register as any).collectors).length;
   }
 }

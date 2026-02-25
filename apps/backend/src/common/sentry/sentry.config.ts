@@ -2,6 +2,7 @@
 // Отправляет ошибки и исключения в Sentry
 
 import * as Sentry from '@sentry/node';
+import * as Tracing from '@sentry/tracing';
 
 export interface SentryConfig {
   dsn: string;
@@ -53,16 +54,6 @@ export function initSentry(config: SentryConfig) {
       return event;
     },
   });
-}
-
-// Middleware для обработки ошибок в Express
-export function sentryErrorHandler() {
-  return Sentry.Handlers.errorHandler();
-}
-
-// Middleware для tracing запросов
-export function sentryTracingHandler() {
-  return Sentry.Handlers.tracingHandler();
 }
 
 // Хелпер для захвата исключений
