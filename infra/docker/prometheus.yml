@@ -1,0 +1,52 @@
+# Prometheus конфигурация для сбора метрик
+# Определяет цели для сканирования и правила записи
+
+global:
+  scrape_interval: 15s # Интервал сбора метрик
+  evaluation_interval: 15s # Интервал вычисления правил
+  external_labels:
+    monitor: 'crypto-news-bot'
+
+# Правила для записи агрегированных метрик
+rule_files:
+  # - "alerts.yml" # Файл с алертами (можно добавить позже)
+
+# Конфигурация сканирования
+scrape_configs:
+  # Prometheus самосканирование
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          instance: 'prometheus'
+
+  # Backend приложение (NestJS)
+  - job_name: 'backend'
+    static_configs:
+      - targets: ['host.docker.internal:3000']
+        labels:
+          instance: 'backend'
+          service: 'api'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Node Exporter (метрики хоста)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          instance: 'docker-host'
+
+  # PostgreSQL Exporter (можно добавить позже)
+  # - job_name: 'postgres'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']
+  #       labels:
+  #         instance: 'postgres'
+
+  # Redis Exporter (можно добавить позже)
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']
+  #       labels:
+  #         instance: 'redis'

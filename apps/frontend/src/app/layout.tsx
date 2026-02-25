@@ -4,6 +4,13 @@ import './globals.css'
 import type { Metadata } from 'next'
 // Импорт Google шрифта Inter
 import { Inter } from 'next/font/google'
+// Импорт инициализации Sentry для клиента
+import { initSentryClient } from '../lib/sentry/sentry.client'
+
+// Инициализация Sentry на клиенте
+if (typeof window !== 'undefined') {
+  initSentryClient();
+}
 
 // Настройка шрифта Inter с подмножеством латинских символов
 const inter = Inter({ subsets: ['latin'] })

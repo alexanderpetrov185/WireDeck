@@ -1,0 +1,119 @@
+version: '3.8'
+
+# Docker Compose для стека мониторинга
+# Включает: Prometheus, Grafana, Loki (log aggregator)
+
+services:
+  # Prometheus - сбор и хранение метрик
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: crypto-news-prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Grafana - визуализация метрик и логов
+  grafana:
+    image: grafana/grafana:10.1.0
+    container_name: crypto-news-grafana
+    restart: always
+    ports:
+      - "3002:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-piechart-panel
+      - GF_SERVER_ROOT_URL=http://localhost:3002
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Loki - агрегатор логов
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: crypto-news-loki
+    restart: always
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Promtail - агент для отправки логов в Loki
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: crypto-news-promtail
+    restart: always
+    volumes:
+      - ./logs:/var/log/app:ro
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    networks:
+      - monitoring
+
+  # Node Exporter - метрики хоста
+  node-exporter:
+    image: prom/node-exporter:v1.6.0
+    container_name: crypto-news-node-exporter
+    restart: always
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - monitoring
+
+networks:
+  monitoring:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  loki_data:
+    driver: local
