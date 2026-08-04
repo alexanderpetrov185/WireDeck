@@ -39,4 +39,6 @@ COPY --from=builder /app/package.json ./
 EXPOSE 3001
 
 # Запуск приложения в production режиме
-CMD ["node", "apps/frontend/.next/standalone/packages/server.js"]
+# В monorepo standalone-сборка Next.js создает server.js по пути:
+# .next/standalone/apps/frontend/server.js
+CMD ["node", "apps/frontend/.next/standalone/apps/frontend/server.js"]

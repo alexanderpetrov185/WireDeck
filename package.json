@@ -19,9 +19,9 @@
     "start": "npm run start --workspaces --if-present",
     "start:backend": "npm run start --workspace=@crypto-news-bot/backend",
     "start:frontend": "npm run start --workspace=@crypto-news-bot/frontend",
-    "docker:up": "docker-compose -f infra/docker/docker-compose.yml up -d",
-    "docker:down": "docker-compose -f infra/docker/docker-compose.yml down",
-    "docker:build": "docker-compose -f infra/docker/docker-compose.yml build"
+    "docker:up": "docker compose -f compose.yaml up -d",
+    "docker:down": "docker compose -f compose.yaml down",
+    "docker:build": "docker compose -f compose.yaml build"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

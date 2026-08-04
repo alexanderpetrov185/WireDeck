@@ -1,4 +1,5 @@
-version: '3.8'
+# Docker Compose — основной стек приложения
+# Запуск: docker compose up  (из корня проекта, где лежит этот файл)
 
 services:
   # PostgreSQL - база данных для хранения новостей и пользователей
@@ -38,9 +39,9 @@ services:
   # Backend - NestJS приложение
   backend:
     build:
-      # Контекст сборки - корень проекта (доступ ко всем workspace)
-      context: ../../
-      # Путь к Dockerfile относительно контекста
+      # Контекст сборки - корень проекта (здесь: code/), т.к. compose.yaml лежит в корне
+      context: .
+      # Путь к Dockerfile относительно контекста сборки
       dockerfile: apps/backend/Dockerfile
     container_name: crypto-news-bot-backend
     restart: always
@@ -66,9 +67,9 @@ services:
   # Frontend - Next.js приложение
   frontend:
     build:
-      # Контекст сборки - корень проекта (доступ ко всем workspace)
-      context: ../../
-      # Путь к Dockerfile относительно контекста
+      # Контекст сборки - корень проекта (здесь: code/)
+      context: .
+      # Путь к Dockerfile относительно контекста сборки
       dockerfile: apps/frontend/Dockerfile
     container_name: crypto-news-bot-frontend
     restart: always
@@ -78,6 +79,9 @@ services:
       - backend
     environment:
       - NODE_ENV=production
+      # Next.js standalone server.js читает PORT (по умолчанию 3000).
+      # Явно задаем 3001, чтобы контейнер слушал порт, проброшенный наружу.
+      - PORT=3001
       - NEXT_PUBLIC_API_URL=http://localhost:3000
 
 volumes:
