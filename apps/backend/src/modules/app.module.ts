@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'; // Модуль для рабо
 import { HealthModule } from '../health/health.module'; // Модуль для проверки состояния приложения
 import { LoggerModule } from '../common/logger/logger.module'; // Модуль логирования
 import { MetricsModule } from '../common/metrics/metrics.module'; // Модуль метрик Prometheus
+import { NewsModule } from './news/news.module'; // Модуль доменной модели новостей
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { MetricsModule } from '../common/metrics/metrics.module'; // Модул�
     HealthModule, // Модуль проверки состояния приложения
     LoggerModule, // Модуль логирования (глобальный)
     MetricsModule, // Модуль метрик Prometheus (глобальный)
+    NewsModule, // Модуль доменной модели новостей
   ],
   controllers: [], // Здесь будут регистрироваться контроллеры
   providers: [], // Здесь будут регистрироваться сервисы
