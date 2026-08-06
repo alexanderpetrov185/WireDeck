@@ -7,7 +7,7 @@ services:
   # Prometheus - сбор и хранение метрик
   prometheus:
     image: prom/prometheus:v2.47.0
-    container_name: crypto-news-prometheus
+    container_name: wiredeck-prometheus
     restart: always
     ports:
       - "9090:9090"
@@ -31,7 +31,7 @@ services:
   # Grafana - визуализация метрик и логов
   grafana:
     image: grafana/grafana:10.1.0
-    container_name: crypto-news-grafana
+    container_name: wiredeck-grafana
     restart: always
     ports:
       - "3002:3000"
@@ -56,7 +56,7 @@ services:
   # Loki - агрегатор логов
   loki:
     image: grafana/loki:2.9.0
-    container_name: crypto-news-loki
+    container_name: wiredeck-loki
     restart: always
     ports:
       - "3100:3100"
@@ -75,7 +75,7 @@ services:
   # Promtail - агент для отправки логов в Loki
   promtail:
     image: grafana/promtail:2.9.0
-    container_name: crypto-news-promtail
+    container_name: wiredeck-promtail
     restart: always
     volumes:
       - ./logs:/var/log/app:ro
@@ -90,7 +90,7 @@ services:
   # Node Exporter - метрики хоста
   node-exporter:
     image: prom/node-exporter:v1.6.0
-    container_name: crypto-news-node-exporter
+    container_name: wiredeck-node-exporter
     restart: always
     ports:
       - "9100:9100"

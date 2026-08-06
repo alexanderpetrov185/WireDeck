@@ -6,6 +6,7 @@ import { HealthModule } from '../health/health.module'; // Модуль для �
 import { LoggerModule } from '../common/logger/logger.module'; // Модуль логирования
 import { MetricsModule } from '../common/metrics/metrics.module'; // Модуль метрик Prometheus
 import { NewsModule } from './news/news.module'; // Модуль доменной модели новостей
+import { CollectorModule } from './collector/collector.module'; // Модуль сбора новостей
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { NewsModule } from './news/news.module'; // Модуль доменно�
     LoggerModule, // Модуль логирования (глобальный)
     MetricsModule, // Модуль метрик Prometheus (глобальный)
     NewsModule, // Модуль доменной модели новостей
+    CollectorModule, // Модуль сбора новостей
   ],
   controllers: [], // Здесь будут регистрироваться контроллеры
   providers: [], // Здесь будут регистрироваться сервисы

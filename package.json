@@ -1,24 +1,23 @@
 {
-  "name": "crypto-news-telegram-bot",
+  "name": "wiredeck",
   "version": "1.0.0",
   "description": "A monorepo for a crypto news Telegram bot",
   "private": true,
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/*"
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "npm run start:dev --workspace=@crypto-news-bot/backend",
-    "dev:frontend": "npm run dev --workspace=@crypto-news-bot/frontend",
+    "dev:backend": "npm run start:dev --workspace=@wiredeck/backend",
+    "dev:frontend": "npm run dev --workspace=@wiredeck/frontend",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
-    "build:backend": "npm run build --workspace=@crypto-news-bot/backend",
-    "build:frontend": "npm run build --workspace=@crypto-news-bot/frontend",
+    "build:backend": "npm run build --workspace=@wiredeck/backend",
+    "build:frontend": "npm run build --workspace=@wiredeck/frontend",
     "start": "npm run start --workspaces --if-present",
-    "start:backend": "npm run start --workspace=@crypto-news-bot/backend",
-    "start:frontend": "npm run start --workspace=@crypto-news-bot/frontend",
+    "start:backend": "npm run start --workspace=@wiredeck/backend",
+    "start:frontend": "npm run start --workspace=@wiredeck/frontend",
     "docker:up": "docker compose -f compose.yaml up -d",
     "docker:down": "docker compose -f compose.yaml down",
     "docker:build": "docker compose -f compose.yaml build"

@@ -5,7 +5,7 @@ global:
   scrape_interval: 15s # Интервал сбора метрик
   evaluation_interval: 15s # Интервал вычисления правил
   external_labels:
-    monitor: 'crypto-news-bot'
+    monitor: 'wiredeck'
 
 # Правила для записи агрегированных метрик
 rule_files:

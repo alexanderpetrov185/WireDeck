@@ -20,7 +20,7 @@ RUN npm ci --legacy-peer-deps
 COPY apps/backend/src ./apps/backend/src
 
 # Сборка backend приложения
-RUN npm run build --workspace=@crypto-news-bot/backend
+RUN npm run build --workspace=@wiredeck/backend
 
 # Production стадия
 FROM node:22-alpine AS production

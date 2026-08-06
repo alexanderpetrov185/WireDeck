@@ -19,7 +19,7 @@ scrape_configs:
       - targets:
           - localhost
         labels:
-          job: crypto-news-bot
+          job: wiredeck
           __path__: /var/log/app/*.log
           host: backend
     pipeline_stages:

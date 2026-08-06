@@ -142,7 +142,8 @@ export class News {
   @Column({ name: 'rejection_reason', type: 'text', nullable: true })
   rejectionReason: string | null;
 
-  // Время публикации в Telegram (Sprint 5)
+  // Время публикации новости в оригинальном источнике
+  // (заполняется коллектором при сборе данных)
   @Column({ name: 'published_at', type: 'timestamptz', nullable: true })
   publishedAt: Date | null;
 

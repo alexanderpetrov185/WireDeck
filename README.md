@@ -1,4 +1,4 @@
-# MarketTwits_Uz Monorepo
+# WireDeck Monorepo
 
 ## Структура
 - `apps/backend`: NestJS/Node.js API

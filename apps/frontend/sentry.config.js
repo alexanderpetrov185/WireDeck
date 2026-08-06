@@ -3,7 +3,7 @@
 
 module.exports = {
   // Организационные настройки
-  org: process.env.SENTRY_ORG || 'crypto-news-bot',
+  org: process.env.SENTRY_ORG || 'wiredeck',
   project: process.env.SENTRY_PROJECT || 'frontend',
   
   // Auth token для загрузки sourcemaps

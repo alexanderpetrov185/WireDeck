@@ -370,7 +370,7 @@
   "schemaVersion": 38,
   "style": "dark",
   "tags": [
-    "crypto-news-bot",
+    "wiredeck",
     "backend"
   ],
   "templating": {
@@ -382,8 +382,8 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Crypto News Bot - Backend Metrics",
-  "uid": "crypto-news-backend",
+  "title": "WireDeck - Backend Metrics",
+  "uid": "wiredeck-backend",
   "version": 1,
   "weekStart": ""
 }

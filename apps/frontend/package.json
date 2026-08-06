@@ -1,5 +1,5 @@
 {
-  "name": "@crypto-news-bot/frontend",
+  "name": "@wiredeck/frontend",
   "version": "1.0.0",
   "private": true,
   "type": "module",

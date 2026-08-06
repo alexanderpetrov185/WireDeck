@@ -51,7 +51,7 @@ npm run dev:backend
 # .env файл в корне проекта
 SENTRY_DSN=https://xxx@xxx.ingest.sentry.io/xxx
 NEXT_PUBLIC_SENTRY_DSN=https://xxx@xxx.ingest.sentry.io/xxx
-SENTRY_ORG=crypto-news-bot
+SENTRY_ORG=wiredeck
 SENTRY_PROJECT=backend
 SENTRY_AUTH_TOKEN=sntrys_xxx
 ```
@@ -173,7 +173,7 @@ this.metrics.updateQueueSize('news-queue', 42);
 
 ### Встроенные дашборды
 
-1. **Crypto News Bot - Backend Metrics**
+1. **WireDeck - Backend Metrics**
    - HTTP Requests Rate
    - HTTP Request Duration (95th percentile)
    - Queue Size
@@ -200,22 +200,22 @@ this.metrics.updateQueueSize('news-queue', 42);
 1. Откройте Grafana: http://localhost:3002
 2. Перейдите в Explore
 3. Выберите datasource: Loki
-4. Используйте Label Filter: `{job="crypto-news-bot"}`
+4. Используйте Label Filter: `{job="wiredeck"}`
 
 ### Примеры запросов
 
 ```
 # Все логи приложения
-{job="crypto-news-bot"}
+{job="wiredeck"}
 
 # Только ошибки
-{job="crypto-news-bot"} |= "level" |= "error"
+{job="wiredeck"} |= "level" |= "error"
 
 # Логи конкретного контекста
-{job="crypto-news-bot"} | json | context="HealthController"
+{job="wiredeck"} | json | context="HealthController"
 
 # Логи за последний час
-{job="crypto-news-bot"} | json | level="error" | line_format "{{.timestamp}} {{.message}}"
+{job="wiredeck"} | json | level="error" | line_format "{{.timestamp}} {{.message}}"
 ```
 
 ## Алёртинг
@@ -256,7 +256,7 @@ groups:
 # Sentry
 SENTRY_DSN=
 NEXT_PUBLIC_SENTRY_DSN=
-SENTRY_ORG=crypto-news-bot
+SENTRY_ORG=wiredeck
 SENTRY_PROJECT=backend
 SENTRY_AUTH_TOKEN=
 

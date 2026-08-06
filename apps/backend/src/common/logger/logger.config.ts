@@ -50,7 +50,7 @@ const errorTransport = new winston.transports.DailyRotateFile({
 // Создание экземпляра логгера
 export const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
-  defaultMeta: { service: 'crypto-news-bot' },
+  defaultMeta: { service: 'wiredeck' },
   transports: [
     // Консольный вывод
     new winston.transports.Console({
