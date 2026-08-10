@@ -17,8 +17,8 @@ const inter = Inter({ subsets: ['latin'] })
 
 // Метаданные страницы для SEO
 export const metadata: Metadata = {
-  title: 'Crypto News Admin Panel', // Заголовок страницы
-  description: 'Admin panel for managing crypto news Telegram bot', // Описание страницы
+  title: 'WireDeck Admin Panel', // Заголовок страницы
+  description: 'Admin panel for managing financial and market news', // Описание страницы
 }
 
 // Компонент корневого макета приложения

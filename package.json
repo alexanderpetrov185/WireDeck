@@ -1,7 +1,7 @@
 {
   "name": "wiredeck",
   "version": "1.0.0",
-  "description": "A monorepo for a crypto news Telegram bot",
+  "description": "A monorepo for financial and market news aggregation",
   "private": true,
   "workspaces": [
     "apps/*"
@@ -29,10 +29,10 @@
     "monorepo",
     "nestjs",
     "nextjs",
-    "telegram",
-    "bot",
-    "crypto",
-    "news"
+    "financial",
+    "markets",
+    "news",
+    "aggregator"
   ],
   "author": "",
   "license": "MIT"

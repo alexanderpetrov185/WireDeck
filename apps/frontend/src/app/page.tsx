@@ -24,7 +24,7 @@ export default function Home() {
       {/* Шапка страницы */}
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold text-gray-900">Crypto News Admin Panel</h1>
+          <h1 className="text-3xl font-bold text-gray-900">WireDeck Admin Panel</h1>
         </div>
       </header>
       {/* Основное содержимое страницы */}
@@ -117,20 +117,20 @@ export default function Home() {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       <tr>
-                        <td className="px-6 py-4 whitespace-nowrap">Bitcoin Reaches New All-Time High</td>
-                        <td className="px-6 py-4 whitespace-nowrap">CoinDesk</td>
+                        <td className="px-6 py-4 whitespace-nowrap">Federal Reserve Holds Interest Rates Steady</td>
+                        <td className="px-6 py-4 whitespace-nowrap">Reuters</td>
                         <td className="px-6 py-4 whitespace-nowrap">2023-06-15</td>
                         <td className="px-6 py-4 whitespace-nowrap"><span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Published</span></td>
                       </tr>
                       <tr>
-                        <td className="px-6 py-4 whitespace-nowrap">Ethereum Upgrade Announced</td>
-                        <td className="px-6 py-4 whitespace-nowrap">CryptoSlate</td>
+                        <td className="px-6 py-4 whitespace-nowrap">S&P 500 Closes at Record High</td>
+                        <td className="px-6 py-4 whitespace-nowrap">Bloomberg</td>
                         <td className="px-6 py-4 whitespace-nowrap">2023-06-14</td>
                         <td className="px-6 py-4 whitespace-nowrap"><span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Published</span></td>
                       </tr>
                       <tr>
-                        <td className="px-6 py-4 whitespace-nowrap">DeFi Protocol Launches New Features</td>
-                        <td className="px-6 py-4 whitespace-nowrap">The Block</td>
+                        <td className="px-6 py-4 whitespace-nowrap">EUR/USD Rallies After ECB Statement</td>
+                        <td className="px-6 py-4 whitespace-nowrap">Bloomberg</td>
                         <td className="px-6 py-4 whitespace-nowrap">2023-06-13</td>
                         <td className="px-6 py-4 whitespace-nowrap"><span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span></td>
                       </tr>

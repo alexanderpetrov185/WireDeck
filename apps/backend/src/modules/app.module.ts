@@ -19,7 +19,7 @@ import { CollectorModule } from './collector/collector.module'; // Модуль 
       port: parseInt(process.env.DB_PORT, 10) || 5432, // Порт подключения
       username: process.env.DB_USERNAME || 'postgres', // Имя пользователя
       password: process.env.DB_PASSWORD || 'postgres', // Пароль
-      database: process.env.DB_NAME || 'cryptobot', // Имя базы данных
+      database: process.env.DB_NAME || 'wiredeck', // Имя базы данных
       autoLoadEntities: true, // Автоматическая загрузка сущностей
       synchronize: process.env.NODE_ENV !== 'production', // Синхронизация схемы БД (только для разработки)
     }),

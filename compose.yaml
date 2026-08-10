@@ -10,7 +10,7 @@ services:
     container_name: wiredeck-postgres
     restart: always
     environment:
-      POSTGRES_DB: cryptobot
+      POSTGRES_DB: wiredeck
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
@@ -59,7 +59,7 @@ services:
       - DB_PORT=5432
       - DB_USERNAME=postgres
       - DB_PASSWORD=postgres
-      - DB_NAME=cryptobot
+      - DB_NAME=wiredeck
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - NODE_ENV=production
