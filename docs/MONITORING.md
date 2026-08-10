@@ -275,7 +275,7 @@ GRAFANA_ADMIN_PASSWORD=admin123
 
 1. Проверьте, что backend доступен: `curl http://localhost:3000/metrics`
 2. Проверьте конфигурацию `prometheus.yml`
-3. Проверьте логи Prometheus: `docker logs crypto-news-prometheus`
+3. Проверьте логи Prometheus: `docker logs wiredeck-prometheus`
 
 ### Grafana не показывает данные
 
@@ -285,7 +285,7 @@ GRAFANA_ADMIN_PASSWORD=admin123
 
 ### Loki не получает логи
 
-1. Проверьте конфигурацию Promtail: `docker logs crypto-news-promtail`
+1. Проверьте конфигурацию Promtail: `docker logs wiredeck-promtail`
 2. Убедитесь, что файлы логов существуют
 3. Проверьте права доступа к файлам логов
 

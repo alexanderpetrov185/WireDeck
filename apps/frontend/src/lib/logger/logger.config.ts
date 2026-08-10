@@ -25,7 +25,7 @@ const productionFormat = winston.format.combine(
 // Создание экземпляра логгера
 export const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
-  defaultMeta: { service: 'crypto-news-frontend' },
+  defaultMeta: { service: 'wiredeck-frontend' },
   transports: [
     // Консольный вывод
     new winston.transports.Console({
