@@ -3,6 +3,7 @@
 // Работает только с интерфейсом CollectedNews.
 
 import { Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios';
 import { CollectorService } from './collector.service';
 import { NewsCollector } from './interfaces/news-collector.interface';
 import { NEWS_COLLECTORS } from './constants/collector.tokens';
@@ -14,6 +15,12 @@ import { BinanceCollector } from './providers/binance/binance.collector';
 import { CoinGeckoCollector } from './providers/coingecko/coingecko.collector';
 
 @Module({
+  imports: [
+    HttpModule.register({
+      timeout: 10000,
+      maxRedirects: 5,
+    }),
+  ],
   providers: [
     CollectorService,
     RssCollector,

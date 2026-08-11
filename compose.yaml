@@ -63,6 +63,8 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - NODE_ENV=production
+      - RSS_FEEDS=${RSS_FEEDS}
+      - INGESTION_TOKEN=${INGESTION_TOKEN}
     volumes:
       - backend-logs:/app/logs
 

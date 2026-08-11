@@ -50,6 +50,9 @@ export enum NewsSentiment {
 @Entity('news')
 @Index(['status'])
 @Index(['category'])
+@Index(['source', 'sourceId'])
+@Index(['publishedAt'])
+@Index(['createdAt'])
 export class News {
   // Первичный ключ (uuid)
   @PrimaryGeneratedColumn('uuid')

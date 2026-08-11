@@ -1,5 +1,6 @@
 // Модуль приложения NestJS
 import { Module } from '@nestjs/common';
+import { join } from 'path';
 import { ConfigModule } from '@nestjs/config'; // Модуль для работы с конфигурацией
 import { TypeOrmModule } from '@nestjs/typeorm'; // Модуль для работы с TypeORM и базой данных
 import { HealthModule } from '../health/health.module'; // Модуль для проверки состояния приложения
@@ -7,6 +8,7 @@ import { LoggerModule } from '../common/logger/logger.module'; // Модуль �
 import { MetricsModule } from '../common/metrics/metrics.module'; // Модуль метрик Prometheus
 import { NewsModule } from './news/news.module'; // Модуль доменной модели новостей
 import { CollectorModule } from './collector/collector.module'; // Модуль сбора новостей
+import { IngestionModule } from './ingestion/ingestion.module'; // Модуль оркестрации сбора новостей
 
 @Module({
   imports: [
@@ -21,13 +23,20 @@ import { CollectorModule } from './collector/collector.module'; // Модуль 
       password: process.env.DB_PASSWORD || 'postgres', // Пароль
       database: process.env.DB_NAME || 'wiredeck', // Имя базы данных
       autoLoadEntities: true, // Автоматическая загрузка сущностей
-      synchronize: process.env.NODE_ENV !== 'production', // Синхронизация схемы БД (только для разработки)
+      // Синхронизация схемы всегда выключена — применяем миграции (migrationsRun: true)
+      synchronize: false,
+      // Путь к миграциям через __dirname:
+      // dev (ts-node): src/modules/app.module.ts → src/database/migrations
+      // prod (dist):   dist/modules/app.module.js   → dist/database/migrations
+      migrations: [join(__dirname, '..', 'database', 'migrations', '*.{ts,js}')],
+      migrationsRun: true,
     }),
     HealthModule, // Модуль проверки состояния приложения
     LoggerModule, // Модуль логирования (глобальный)
     MetricsModule, // Модуль метрик Prometheus (глобальный)
     NewsModule, // Модуль доменной модели новостей
     CollectorModule, // Модуль сбора новостей
+    IngestionModule, // Модуль оркестрации сбора новостей
   ],
   controllers: [], // Здесь будут регистрироваться контроллеры
   providers: [], // Здесь будут регистрироваться сервисы

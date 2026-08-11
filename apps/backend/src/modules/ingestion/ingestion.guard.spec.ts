@@ -1,0 +1,69 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
+import { ExecutionContext } from '@nestjs/common';
+import { IngestionGuard } from './ingestion.guard';
+
+describe('IngestionGuard', () => {
+  let guard: IngestionGuard;
+  let configService: ConfigService;
+
+  const mockContext = (headers: Record<string, string | undefined>): ExecutionContext =>
+    ({
+      switchToHttp: () => ({
+        getRequest: () => ({ headers }),
+      }),
+    }) as unknown as ExecutionContext;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        IngestionGuard,
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    guard = module.get<IngestionGuard>(IngestionGuard);
+    configService = module.get<ConfigService>(ConfigService);
+  });
+
+  it('should be defined', () => {
+    expect(guard).toBeDefined();
+  });
+
+  it('should deny access when INGESTION_TOKEN is empty', () => {
+    (configService.get as jest.Mock).mockReturnValue('');
+
+    const result = guard.canActivate(mockContext({ 'x-ingestion-token': 'anything' }));
+
+    expect(result).toBe(false);
+  });
+
+  it('should deny access when token is missing', () => {
+    (configService.get as jest.Mock).mockReturnValue('secret-token');
+
+    const result = guard.canActivate(mockContext({}));
+
+    expect(result).toBe(false);
+  });
+
+  it('should deny access when token is wrong', () => {
+    (configService.get as jest.Mock).mockReturnValue('secret-token');
+
+    const result = guard.canActivate(mockContext({ 'x-ingestion-token': 'wrong-token' }));
+
+    expect(result).toBe(false);
+  });
+
+  it('should allow access when token matches', () => {
+    (configService.get as jest.Mock).mockReturnValue('secret-token');
+
+    const result = guard.canActivate(mockContext({ 'x-ingestion-token': 'secret-token' }));
+
+    expect(result).toBe(true);
+  });
+});
