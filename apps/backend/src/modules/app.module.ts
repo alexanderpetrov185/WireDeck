@@ -9,6 +9,7 @@ import { MetricsModule } from '../common/metrics/metrics.module'; // Модул�
 import { NewsModule } from './news/news.module'; // Модуль доменной модели новостей
 import { CollectorModule } from './collector/collector.module'; // Модуль сбора новостей
 import { IngestionModule } from './ingestion/ingestion.module'; // Модуль оркестрации сбора новостей
+import { AiProcessingModule } from './ai-processing/ai-processing.module'; // Модуль AI-обработки новостей
 
 @Module({
   imports: [
