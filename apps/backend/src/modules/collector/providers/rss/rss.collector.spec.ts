@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { RssCollector } from './rss.collector';
 import { LoggerService } from '../../../../common/logger/logger.service';
 import { NewsSource } from '../../../news/entities/news.entity';
-import * as Parser from 'rss-parser';
 
 // Мокаем rss-parser через фабрику
 const mockParseURL = jest.fn();

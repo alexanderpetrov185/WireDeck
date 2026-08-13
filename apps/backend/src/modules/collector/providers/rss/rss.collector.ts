@@ -1,7 +1,7 @@
 // RSS-коллектор (Sprint 3)
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import Parser = require('rss-parser');
+import Parser from 'rss-parser';
 import { NewsSource, NewsLanguage } from '../../../news/entities/news.entity';
 import { NewsCollector } from '../../interfaces/news-collector.interface';
 import { CollectedNews } from '../../interfaces/collected-news.interface';

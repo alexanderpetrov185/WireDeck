@@ -36,7 +36,7 @@ export function initSentryClient() {
     replaysOnErrorSampleRate: 1.0,
     
     // Фильтрация чувствительных данных
-    beforeSend(event, hint) {
+    beforeSend(event, _hint) {
       // Удаление чувствительных данных
       if (event.request) {
         delete event.request.cookies;

@@ -13,6 +13,8 @@
     "experimentalDecorators": true,
     // Позволить синтетические значения по умолчанию для не CommonJS модулей
     "allowSyntheticDefaultImports": true,
+    // Включить совместимость с ES модулями (для import default из CommonJS)
+    "esModuleInterop": true,
     // Целевая версия ECMAScript для компиляции
     "target": "ES2021",
     // Генерировать sourcemaps

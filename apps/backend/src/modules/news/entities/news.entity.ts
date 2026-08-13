@@ -1,6 +1,6 @@
 // News entity — доменная модель новости/события
 // Спроектирована с учётом будущего pipeline обработки:
-// ингест → дедупликация → суммаризация → перевод → модерация → публикация в Telegram
+// ингест → дедупликация → суммаризация → перевод → модерация → публикация
 
 import {
   Column,
@@ -15,10 +15,10 @@ import {
 export enum NewsStatus {
   RAW = 'raw', // сырое событие с источника
   PROCESSED = 'processed', // прошло дедуп/суммаризацию/скоринг
-  TRANSLATED = 'translated', // переведено на узбекский
+  TRANSLATED = 'translated', // переведено
   QUEUED = 'queued', // ожидает модерации
   APPROVED = 'approved', // одобрено модератором
-  PUBLISHED = 'published', // опубликовано в Telegram
+  PUBLISHED = 'published', // опубликовано
   REJECTED = 'rejected', // отклонено модератором
 }
 
@@ -33,7 +33,7 @@ export enum NewsSource {
   MANUAL = 'manual',
 }
 
-// Язык контента (источники EN/RU → целевой UZ)
+// Язык контента (источники EN/RU → целевой EN)
 export enum NewsLanguage {
   EN = 'en',
   RU = 'ru',
@@ -102,7 +102,7 @@ export class News {
   @Column({ type: 'text', nullable: true })
   summary: string | null;
 
-  // Переведённый текст на узбекский (Sprint 3 AI Translation)
+  // Переведённый текст (Sprint 3 AI Translation)
   @Column({ name: 'translated_text', type: 'text', nullable: true })
   translatedText: string | null;
 
@@ -129,7 +129,7 @@ export class News {
   @Column({ name: 'duplicate_of', type: 'uuid', nullable: true })
   duplicateOf: string | null;
 
-  // ID сообщения в Telegram после публикации (Sprint 5)
+  // ID сообщения в канале публикации после публикации (Sprint 8 Publishing)
   @Column({ name: 'telegram_message_id', type: 'bigint', nullable: true })
   telegramMessageId: string | null;
 

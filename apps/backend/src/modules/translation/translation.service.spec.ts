@@ -85,10 +85,10 @@ describe('TranslationService', () => {
     (translationProvider.translate as jest.Mock).mockResolvedValue('Переведённая выжимка');
     (newsService.update as jest.Mock).mockResolvedValue({ ...news, translatedText: 'Переведённая выжимка', status: NewsStatus.TRANSLATED });
 
-    const result = await service.translateOne('uuid-1', 'uz');
+    const result = await service.translateOne('uuid-1', 'en');
 
     expect(result).toEqual({ processed: 1, skipped: 0, errors: 0 });
-    expect(translationProvider.translate).toHaveBeenCalledWith('Original summary', 'uz');
+    expect(translationProvider.translate).toHaveBeenCalledWith('Original summary', 'en');
     expect(newsService.update).toHaveBeenCalledWith('uuid-1', {
       translatedText: 'Переведённая выжимка',
       status: NewsStatus.TRANSLATED,
@@ -99,7 +99,7 @@ describe('TranslationService', () => {
     const news = mockNews({ status: NewsStatus.RAW, summary: 'Original summary' });
     (newsService.findById as jest.Mock).mockResolvedValue(news);
 
-    const result = await service.translateOne('uuid-1', 'uz');
+    const result = await service.translateOne('uuid-1', 'en');
 
     expect(result).toEqual({ processed: 0, skipped: 1, errors: 0 });
     expect(translationProvider.translate).not.toHaveBeenCalled();
@@ -109,7 +109,7 @@ describe('TranslationService', () => {
     const news = mockNews({ status: NewsStatus.TRANSLATED, summary: 'Original summary', translatedText: 'Already translated' });
     (newsService.findById as jest.Mock).mockResolvedValue(news);
 
-    const result = await service.translateOne('uuid-1', 'uz');
+    const result = await service.translateOne('uuid-1', 'en');
 
     expect(result).toEqual({ processed: 0, skipped: 1, errors: 0 });
     expect(translationProvider.translate).not.toHaveBeenCalled();
@@ -121,17 +121,17 @@ describe('TranslationService', () => {
     (translationProvider.translate as jest.Mock).mockResolvedValue('New translation');
     (newsService.update as jest.Mock).mockResolvedValue({ ...news, translatedText: 'New translation', status: NewsStatus.TRANSLATED });
 
-    const result = await service.translateOne('uuid-1', 'uz', true);
+    const result = await service.translateOne('uuid-1', 'en', true);
 
     expect(result).toEqual({ processed: 1, skipped: 0, errors: 0 });
-    expect(translationProvider.translate).toHaveBeenCalledWith('Original summary', 'uz');
+    expect(translationProvider.translate).toHaveBeenCalledWith('Original summary', 'en');
   });
 
   it('should skip news with empty summary', async () => {
     const news = mockNews({ status: NewsStatus.PROCESSED, summary: null });
     (newsService.findById as jest.Mock).mockResolvedValue(news);
 
-    const result = await service.translateOne('uuid-1', 'uz');
+    const result = await service.translateOne('uuid-1', 'en');
 
     expect(result).toEqual({ processed: 0, skipped: 1, errors: 0 });
     expect(translationProvider.translate).not.toHaveBeenCalled();
@@ -141,7 +141,7 @@ describe('TranslationService', () => {
     const news = mockNews({ status: NewsStatus.PROCESSED, summary: '   ' });
     (newsService.findById as jest.Mock).mockResolvedValue(news);
 
-    const result = await service.translateOne('uuid-1', 'uz');
+    const result = await service.translateOne('uuid-1', 'en');
 
     expect(result).toEqual({ processed: 0, skipped: 1, errors: 0 });
     expect(translationProvider.translate).not.toHaveBeenCalled();
@@ -150,7 +150,7 @@ describe('TranslationService', () => {
   it('should handle news not found', async () => {
     (newsService.findById as jest.Mock).mockResolvedValue(null);
 
-    const result = await service.translateOne('nonexistent', 'uz');
+    const result = await service.translateOne('nonexistent', 'en');
 
     expect(result).toEqual({ processed: 0, skipped: 0, errors: 1 });
     expect(translationProvider.translate).not.toHaveBeenCalled();
@@ -161,7 +161,7 @@ describe('TranslationService', () => {
     (newsService.findById as jest.Mock).mockResolvedValue(news);
     (translationProvider.translate as jest.Mock).mockRejectedValue(new Error('Provider unavailable'));
 
-    const result = await service.translateOne('uuid-1', 'uz');
+    const result = await service.translateOne('uuid-1', 'en');
 
     expect(result).toEqual({ processed: 0, skipped: 0, errors: 1 });
     expect(loggerService.error).toHaveBeenCalledWith(
@@ -177,7 +177,7 @@ describe('TranslationService', () => {
     (translationProvider.translate as jest.Mock).mockResolvedValue('Переведённая выжимка');
     (newsService.update as jest.Mock).mockRejectedValue(new Error('DB write failed'));
 
-    const result = await service.translateOne('uuid-1', 'uz');
+    const result = await service.translateOne('uuid-1', 'en');
 
     expect(result).toEqual({ processed: 0, skipped: 0, errors: 1 });
     expect(loggerService.error).toHaveBeenCalledWith(
@@ -197,7 +197,7 @@ describe('TranslationService', () => {
     (translationProvider.translate as jest.Mock).mockResolvedValue('Перевод');
     (newsService.update as jest.Mock).mockResolvedValue({});
 
-    const result = await service.translatePending(50, 'uz');
+    const result = await service.translatePending(50, 'en');
 
     expect(result).toEqual({ processed: 2, skipped: 0, errors: 0 });
     expect(translationProvider.translate).toHaveBeenCalledTimes(2);
@@ -213,7 +213,7 @@ describe('TranslationService', () => {
     (translationProvider.translate as jest.Mock).mockResolvedValue('Перевод');
     (newsService.update as jest.Mock).mockResolvedValue({});
 
-    const result = await service.translatePending(50, 'uz');
+    const result = await service.translatePending(50, 'en');
 
     expect(result).toEqual({ processed: 1, skipped: 1, errors: 0 });
     expect(translationProvider.translate).toHaveBeenCalledTimes(1);
@@ -234,7 +234,7 @@ describe('TranslationService', () => {
       .mockResolvedValueOnce('Перевод 3');
     (newsService.update as jest.Mock).mockResolvedValue({});
 
-    const result = await service.translatePending(50, 'uz');
+    const result = await service.translatePending(50, 'en');
 
     expect(result).toEqual({ processed: 2, skipped: 0, errors: 1 });
     expect(translationProvider.translate).toHaveBeenCalledTimes(3);
@@ -252,7 +252,7 @@ describe('TranslationService', () => {
     (translationProvider.translate as jest.Mock).mockResolvedValue('Перевод');
     (newsService.update as jest.Mock).mockResolvedValue({});
 
-    const result = await service.translatePending(50, 'uz', true);
+    const result = await service.translatePending(50, 'en', true);
 
     expect(result).toEqual({ processed: 2, skipped: 0, errors: 0 });
     expect(newsService.findByStatus).toHaveBeenCalledWith(NewsStatus.PROCESSED, 50);
@@ -262,7 +262,7 @@ describe('TranslationService', () => {
   it('should handle empty batch', async () => {
     (newsService.findByStatus as jest.Mock).mockResolvedValue([]);
 
-    const result = await service.translatePending(50, 'uz');
+    const result = await service.translatePending(50, 'en');
 
     expect(result).toEqual({ processed: 0, skipped: 0, errors: 0 });
     expect(translationProvider.translate).not.toHaveBeenCalled();

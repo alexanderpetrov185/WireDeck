@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NewsService } from '../news/news.service';
-import { NewsStatus, NewsLanguage } from '../news/entities/news.entity';
+import { NewsStatus } from '../news/entities/news.entity';
 import { TranslationProvider } from './translation-provider.interface';
 import { LoggerService } from '../../common/logger/logger.service';
 import { TRANSLATION_PROVIDER } from './translation-provider.token';

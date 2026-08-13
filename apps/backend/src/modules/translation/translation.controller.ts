@@ -58,7 +58,7 @@ export class TranslationController {
    * Валидация против NewsLanguage enum.
    */
   private resolveTargetLanguage(targetLanguage?: string): string {
-    const lang = targetLanguage || process.env.TRANSLATION_TARGET_LANGUAGE || NewsLanguage.UZ;
+    const lang = targetLanguage || process.env.TRANSLATION_TARGET_LANGUAGE || NewsLanguage.EN;
     if (!VALID_TARGET_LANGUAGES.has(lang as NewsLanguage)) {
       throw new BadRequestException(
         `Invalid targetLanguage "${lang}". Valid values: ${Array.from(VALID_TARGET_LANGUAGES).join(', ')}`,

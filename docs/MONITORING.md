@@ -229,7 +229,7 @@ this.metrics.updateQueueSize('news-queue', 42);
    - Query: `database_errors_total`
    - Condition: `IS ABOVE 0`
    - For: `5m`
-5. Настройте уведомления (Email, Slack, Telegram)
+5. Настройте уведомления (Email, Slack)
 
 ### Пример алерта на ошибки БД
 

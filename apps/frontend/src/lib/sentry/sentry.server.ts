@@ -29,7 +29,7 @@ export function initSentryServer() {
     ],
     
     // Фильтрация чувствительных данных
-    beforeSend(event, hint) {
+    beforeSend(event, _hint) {
       if (event.request) {
         delete event.request.cookies;
         if (event.request.headers) {

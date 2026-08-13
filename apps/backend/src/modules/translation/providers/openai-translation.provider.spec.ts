@@ -61,7 +61,7 @@ describe('OpenAiTranslationProvider', () => {
           choices: [
             {
               message: {
-                content: 'Bu uzbek tilida tarjima.',
+                content: 'This is an English translation.',
               },
             },
           ],
@@ -69,9 +69,9 @@ describe('OpenAiTranslationProvider', () => {
       }),
     );
 
-    const result = await provider.translate('This is a summary.', 'uz');
+    const result = await provider.translate('This is a summary.', 'en');
 
-    expect(result).toBe('Bu uzbek tilida tarjima.');
+    expect(result).toBe('This is an English translation.');
     expect(httpService.post).toHaveBeenCalledWith(
       'https://api.example.com/v1/chat/completions',
       expect.objectContaining({
@@ -89,7 +89,7 @@ describe('OpenAiTranslationProvider', () => {
   it('should throw when TRANSLATION_API_KEY is not configured', async () => {
     (configService.get as jest.Mock).mockReturnValue(''); // TRANSLATION_API_KEY
 
-    await expect(provider.translate('Hello', 'uz')).rejects.toThrow(
+    await expect(provider.translate('Hello', 'en')).rejects.toThrow(
       'TRANSLATION_API_KEY is not configured',
     );
     expect(httpService.post).not.toHaveBeenCalled();
@@ -115,7 +115,7 @@ describe('OpenAiTranslationProvider', () => {
       }),
     );
 
-    await expect(provider.translate('Hello', 'uz')).rejects.toThrow(
+    await expect(provider.translate('Hello', 'en')).rejects.toThrow(
       'Translation provider returned empty content',
     );
   });
@@ -140,7 +140,7 @@ describe('OpenAiTranslationProvider', () => {
       }),
     );
 
-    await expect(provider.translate('Hello', 'uz')).rejects.toThrow(
+    await expect(provider.translate('Hello', 'en')).rejects.toThrow(
       'Translation provider returned empty translation',
     );
   });
@@ -155,7 +155,7 @@ describe('OpenAiTranslationProvider', () => {
       throwError(() => new Error('Network error')),
     );
 
-    await expect(provider.translate('Hello', 'uz')).rejects.toThrow(
+    await expect(provider.translate('Hello', 'en')).rejects.toThrow(
       'Translation provider error: Network error',
     );
     expect(loggerService.error).toHaveBeenCalledWith(
@@ -178,7 +178,7 @@ describe('OpenAiTranslationProvider', () => {
           choices: [
             {
               message: {
-                content: 'Tarjima.',
+                content: 'Translated text.',
               },
             },
           ],
@@ -186,9 +186,9 @@ describe('OpenAiTranslationProvider', () => {
       }),
     );
 
-    const result = await provider.translate('Hello', 'uz');
+    const result = await provider.translate('Hello', 'en');
 
-    expect(result).toBe('Tarjima.');
+    expect(result).toBe('Translated text.');
     expect(httpService.post).toHaveBeenCalledWith(
       'https://api.openai.com/v1/chat/completions',
       expect.objectContaining({

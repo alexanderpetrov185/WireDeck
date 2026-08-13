@@ -2,7 +2,6 @@
 // Отправляет ошибки и исключения в Sentry
 
 import * as Sentry from '@sentry/node';
-import * as Tracing from '@sentry/tracing';
 
 export interface SentryConfig {
   dsn: string;
@@ -43,7 +42,7 @@ export function initSentry(config: SentryConfig) {
     ],
     
     // Фильтрация чувствительных данных
-    beforeSend(event, hint) {
+    beforeSend(event, _hint) {
       // Удаление чувствительных данных из события
       if (event.request) {
         delete event.request.cookies;

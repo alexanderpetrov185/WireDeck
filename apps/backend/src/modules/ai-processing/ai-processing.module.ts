@@ -1,16 +1,15 @@
 import { Module } from '@nestjs/common';
 import { AiProcessingService } from './ai-processing.service';
 import { AiProcessingController } from './ai-processing.controller';
-import { AiProvider } from './ai-provider.interface';
-import { AiResult } from './ai-result.interface';
 import { ConfigModule } from '@nestjs/config';
 import { AiProviderModule } from './providers/ai-provider.module';
-import { TokenGuard } from '../../common/guards/token.guard';
+import { NewsModule } from '../news/news.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     AiProviderModule,
+    NewsModule,
   ],
   controllers: [AiProcessingController],
   providers: [AiProcessingService],

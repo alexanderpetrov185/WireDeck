@@ -1,9 +1,14 @@
 import { Module } from '@nestjs/common';
-import { AiProvider } from '../ai-provider.interface';
+import { HttpModule } from '@nestjs/axios';
 import { OpenAiProvider } from './openai.provider';
 import { AI_PROVIDER } from '../ai-provider.token';
 
 @Module({
+  imports: [
+    HttpModule.register({
+      timeout: 30000,
+    }),
+  ],
   providers: [
     {
       provide: AI_PROVIDER,
