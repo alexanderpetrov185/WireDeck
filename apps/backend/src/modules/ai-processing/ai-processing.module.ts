@@ -5,7 +5,7 @@ import { AiProvider } from './ai-provider.interface';
 import { AiResult } from './ai-result.interface';
 import { ConfigModule } from '@nestjs/config';
 import { AiProviderModule } from './providers/ai-provider.module';
-import { TokenGuard } from '../../../common/guards/token.guard';
+import { TokenGuard } from '../../common/guards/token.guard';
 
 @Module({
   imports: [

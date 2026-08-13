@@ -10,6 +10,7 @@ import { NewsModule } from './news/news.module'; // Модуль доменно�
 import { CollectorModule } from './collector/collector.module'; // Модуль сбора новостей
 import { IngestionModule } from './ingestion/ingestion.module'; // Модуль оркестрации сбора новостей
 import { AiProcessingModule } from './ai-processing/ai-processing.module'; // Модуль AI-обработки новостей
+import { TranslationModule } from './translation/translation.module'; // Модуль перевода новостей
 
 @Module({
   imports: [
@@ -38,6 +39,8 @@ import { AiProcessingModule } from './ai-processing/ai-processing.module'; // М
     NewsModule, // Модуль доменной модели новостей
     CollectorModule, // Модуль сбора новостей
     IngestionModule, // Модуль оркестрации сбора новостей
+    AiProcessingModule, // Модуль AI-обработки новостей
+    TranslationModule, // Модуль перевода новостей
   ],
   controllers: [], // Здесь будут регистрироваться контроллеры
   providers: [], // Здесь будут регистрироваться сервисы

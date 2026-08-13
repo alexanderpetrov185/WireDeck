@@ -1,7 +1,7 @@
 import { Controller, Post, Param, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { AiProcessingService } from './ai-processing.service';
 import { AiProcessingResult } from './ai-processing.service';
-import { TokenGuard } from ../../common/guards/token.guard;
+import { TokenGuard } from '../../common/guards/token.guard';
 
 @Controller('ai-processing')
 export class AiProcessingController {
