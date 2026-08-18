@@ -2,7 +2,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Parser from 'rss-parser';
-import { NewsSource, NewsLanguage } from '../../../news/entities/news.entity';
+import { NewsSource } from '../../../news/constants/news-source.enum';
+import { NewsLanguage } from '../../../news/constants/news-language.enum';
 import { NewsCollector } from '../../interfaces/news-collector.interface';
 import { CollectedNews } from '../../interfaces/collected-news.interface';
 import { LoggerService } from '../../../../common/logger/logger.service';

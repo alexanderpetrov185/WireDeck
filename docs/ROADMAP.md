@@ -11,7 +11,7 @@
 | Sprint 5 | AI Processing | Суммаризация, классификация, скоринг | DONE |
 | Sprint 6 | Translation | Перевод на target language (EN default) | DONE |
 | Sprint 7 | Moderation | UI одобрения/отклонения новостей | NOT STARTED |
-| Sprint 8 | Publishing | Публикация в каналы | NOT STARTED |
+| Sprint 8 | Publishing (Telegram) | Публикация в Telegram-канал | NOT STARTED |
 | Sprint 9 | Scheduler + BullMQ | Планировщик задач, очереди | NOT STARTED |
 | Sprint 10 | Frontend Admin | Админ-панель для модерации | NOT STARTED |
 | Sprint 11 | Reliability + Production Readiness | Health, graceful shutdown, tracing | NOT STARTED |
@@ -40,9 +40,11 @@
 - Статусы QUEUED -> APPROVED / REJECTED.
 - moderatedBy, moderatedAt, rejectionReason (уже в entity).
 
-### Sprint 8 — Publishing
-- Публикация одобренных новостей в каналы.
-- Поле telegramMessageId (канал публикации) — уже в entity.
+### Sprint 8 — Publishing (Telegram)
+- Публикация одобренных новостей в Telegram-канал.
+- Telegram является центральной платформой доставки контента.
+- Поле telegramMessageId (ID сообщения в Telegram-канале) — уже в entity.
+- Интеграция с Telegram Bot API для отправки сообщений.
 
 ### Sprint 9 — Scheduler + BullMQ
 - Планировщик для периодического запуска коллекторов, AI Processing и Translation.

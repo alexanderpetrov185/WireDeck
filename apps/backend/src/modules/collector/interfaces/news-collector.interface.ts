@@ -2,7 +2,7 @@
 // Каждый источник (RSS, Twitter, NewsAPI и т.д.) реализует этот интерфейс.
 // Коллектор НЕ знает о базе данных — он только собирает и нормализует данные.
 
-import { NewsSource } from '../../news/entities/news.entity';
+import { NewsSource } from '../../news/constants/news-source.enum';
 import { CollectedNews } from './collected-news.interface';
 
 export interface NewsCollector {

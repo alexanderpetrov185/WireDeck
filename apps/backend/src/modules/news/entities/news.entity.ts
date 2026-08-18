@@ -10,6 +10,8 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { NewsSource } from '../constants/news-source.enum';
+import { NewsLanguage } from '../constants/news-language.enum';
 
 // Статус новости — полный жизненный цикл в пайплайне (Sprint 4 workflow)
 export enum NewsStatus {
@@ -20,24 +22,6 @@ export enum NewsStatus {
   APPROVED = 'approved', // одобрено модератором
   PUBLISHED = 'published', // опубликовано
   REJECTED = 'rejected', // отклонено модератором
-}
-
-// Тип источника данных
-export enum NewsSource {
-  TWITTER = 'twitter',
-  NEWSAPI = 'newsapi',
-  GOOGLE_NEWS = 'google_news',
-  BINANCE = 'binance',
-  COINGECKO = 'coingecko',
-  RSS = 'rss',
-  MANUAL = 'manual',
-}
-
-// Язык контента (источники EN/RU → целевой EN)
-export enum NewsLanguage {
-  EN = 'en',
-  RU = 'ru',
-  UZ = 'uz',
 }
 
 // Тональность новости — результат будущего sentiment-анализа (Sprint 7)

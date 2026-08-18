@@ -3,7 +3,8 @@ import { IngestionService } from './ingestion.service';
 import { CollectorService } from '../collector/collector.service';
 import { NewsService } from '../news/news.service';
 import { LoggerService } from '../../common/logger/logger.service';
-import { NewsSource, NewsLanguage } from '../news/entities/news.entity';
+import { NewsSource } from '../news/constants/news-source.enum';
+import { NewsLanguage } from '../news/constants/news-language.enum';
 import { CollectedNews } from '../collector/interfaces/collected-news.interface';
 
 describe('IngestionService', () => {

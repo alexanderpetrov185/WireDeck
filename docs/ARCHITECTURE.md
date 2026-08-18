@@ -2,15 +2,26 @@
 
 ## 1. Назначение проекта
 
-**WireDeck** — универсальная платформа для агрегации, обработки, анализа, перевода,
-модерации и публикации новостей.
+**WireDeck** — AI-управляемая система обработки финансовых новостей.
 
-WireDeck НЕ является:
-- Crypto News Bot
-- Telegram Bot
-- агрегатором **только** криптовалютных новостей
+**Telegram** является центральной платформой доставки контента.
 
-**Crypto** является лишь одним из многих источников данных.
+Финальный бизнес-пайплайн:
+
+```
+Sources
+→ Collectors
+→ Ingestion
+→ Deduplication
+→ AI Processing
+→ Translation
+→ Moderation
+→ Content Enrichment
+→ Publishing
+→ Telegram channel
+```
+
+WireDeck НЕ является универсальной платформой публикации.
 
 Поддерживаемые домены: `finance`, `markets`, `business`, `economy`, `technology`, `crypto`.
 
@@ -21,7 +32,7 @@ WireDeck НЕ является:
 2. Выполнять дедупликацию и нормализацию.
 3. Применять AI-обработку (суммаризация, классификация, скоринг).
 4. Переводить контент на целевые языки.
-5. Обеспечивать модерацию и публикацию в каналы.
+5. Обеспечивать модерацию и публикацию в Telegram-канал.
 6. Обеспечивать наблюдаемость (Sentry, Prometheus, Grafana, Loki).
 
 ## 3. Описание модулей
@@ -45,6 +56,8 @@ WireDeck НЕ является:
 ### 3.3 News / Domain (`src/modules/news/`)
 - **Назначение:** доменная модель (`News` entity), статусы, источники, языки.
 - **Entity:** `apps/backend/src/modules/news/entities/news.entity.ts`.
+- **Enums:** `NewsSource` и `NewsLanguage` вынесены в `constants/` для использования
+  модулями без импорта TypeORM-сущностей.
 
 ### 3.4 AI Processing (`src/modules/ai-processing/`)
 - **Назначение:** суммаризация, классификация, скоринг.
@@ -57,7 +70,11 @@ WireDeck НЕ является:
 - **Idempotency:** повторный запуск для `TRANSLATED` без `force` — скип.
 - **Endpoint'ы:** `POST /translation/run` (batch), `POST /translation/run/:id` (single).
 
-### 3.6 Monitoring (`src/common/`)
+### 3.6 Content Enrichment (планируется)
+- **Назначение:** обогащение контента перед публикацией (теги, ссылки, форматирование).
+- **Статус:** планируется в будущих спринтах.
+
+### 3.7 Monitoring (`src/common/`)
 - **Sentry:** `initSentry`, `captureException`, `captureMessage`, `setSentryContext`, `setSentryUser`.
 - **Logger:** `LoggerService` (Winston).
 - **Metrics:** `MetricsService` + Prometheus (`/metrics` endpoint).
@@ -93,7 +110,11 @@ News [status = TRANSLATED]
   ↓
 Moderation               (ещё не реализован)
   ↓
+Content Enrichment       (ещё не реализован)
+  ↓
 Publishing               (ещё не реализован)
+  ↓
+Telegram channel
 ```
 
 ### Транзиции статусов
@@ -111,12 +132,13 @@ Publishing               (ещё не реализован)
 ## 6. Языковая политика
 
 - **Английский (`en`) — язык по умолчанию.**
-- `TRANSLATION_TARGET_LANGUAGE=en` (см. `.env.example`).
-- Архитектура **расширяема**: `NewsLanguage` enum (EN/RU/UZ) + валидация в
-  `TranslationController.resolveTargetLanguage`.
-- Планируемые языки: `EN`, `RU`, `UZ`, `ES`, `DE`.
-- Проект **не привязан** к узбекскому языку.
-- **Запрещено** добавлять новые миграции или менять схему БД в этом спринте.
+- Модель перевода: `sourceLanguage → translatedText`.
+- Примеры: `ru → translatedText (en)`, `de → translatedText (en)`, `fr → translatedText (en)`.
+- Архитектура **расширяема**: в будущем `sourceLanguage → translatedText (uz)`,
+  `sourceLanguage → translatedText (es)`, `sourceLanguage → translatedText (tr)`.
+- **Запрещено** добавлять `targetLanguage` поле, сущности перевода, дополнительные таблицы,
+  JSONB или миграции БД для расширения языковой поддержки.
+- Текущая архитектура перевода остаётся неизменной.
 
 ## 7. Слой данных
 
@@ -148,7 +170,7 @@ infra/docker/
 | 5      | AI Processing                     | ✅ |
 | 6      | Translation                       | ✅ |
 | 7      | Moderation                        | 🚧 (не реализована) |
-| 8      | Publishing                        | 🚧 (не реализована) |
+| 8      | Publishing (Telegram)             | 🚧 (не реализована) |
 | 9      | Scheduler + BullMQ                | 🔜 |
 | 10     | Frontend Admin                    | 🔜 |
 | 11     | Reliability + Production Readiness| 🔜 |

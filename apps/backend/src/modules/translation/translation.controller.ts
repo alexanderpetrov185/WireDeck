@@ -2,7 +2,7 @@ import { Controller, Post, Param, Query, UseGuards, HttpCode, HttpStatus, BadReq
 import { TranslationService } from './translation.service';
 import { TranslationResult } from './translation-result.interface';
 import { TokenGuard } from '../../common/guards/token.guard';
-import { NewsLanguage } from '../news/entities/news.entity';
+import { NewsLanguage } from '../news/constants/news-language.enum';
 
 /**
  * Допустимые целевые языки для перевода.

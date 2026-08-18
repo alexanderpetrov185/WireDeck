@@ -4,7 +4,7 @@
 // Коллектор не знает о базе данных — только интерфейс CollectedNews.
 
 import { Injectable, Inject } from '@nestjs/common';
-import { NewsSource } from '../news/entities/news.entity';
+import { NewsSource } from '../news/constants/news-source.enum';
 import { NEWS_COLLECTORS } from './constants/collector.tokens';
 import { NewsCollector } from './interfaces/news-collector.interface';
 import { CollectedNews } from './interfaces/collected-news.interface';

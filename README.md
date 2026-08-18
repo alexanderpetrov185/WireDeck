@@ -1,9 +1,29 @@
 # WireDeck Monorepo
 
+## О проекте
+
+**WireDeck** — AI-управляемая система обработки финансовых новостей.
+
+**Telegram** является центральной платформой доставки контента.
+
+Финальный бизнес-пайплайн:
+
+```
+Sources
+→ Collectors
+→ Ingestion
+→ Deduplication
+→ AI Processing
+→ Translation
+→ Moderation
+→ Content Enrichment
+→ Publishing
+→ Telegram channel
+```
+
 ## Структура
 - `apps/backend`: NestJS/Node.js API
 - `apps/frontend`: Next.js Web App
-- `packages/shared`: Типы и общие утилиты
 - `infra/docker`: Конфиги для локального деплоя
 
 ## Запуск

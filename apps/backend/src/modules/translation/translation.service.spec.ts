@@ -4,7 +4,8 @@ import { NewsService } from '../news/news.service';
 import { TranslationProvider } from './translation-provider.interface';
 import { LoggerService } from '../../common/logger/logger.service';
 import { TRANSLATION_PROVIDER } from './translation-provider.token';
-import { NewsStatus, NewsLanguage } from '../news/entities/news.entity';
+import { NewsLanguage } from '../news/constants/news-language.enum';
+import { NewsStatus } from '../news/entities/news.entity';
 
 describe('TranslationService', () => {
   let service: TranslationService;
