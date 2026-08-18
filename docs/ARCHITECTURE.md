@@ -87,7 +87,42 @@ WireDeck НЕ является универсальной платформой �
 - **Frontend → запрещено** импортировать backend-код.
 - Модули общаются только через интерфейсы и DI-токены.
 
-## 5. Жизненный цикл новости (News Lifecycle)
+## 5. Architecture Freeze Rules
+
+Следующие модули считаются **стабильными**:
+
+- **Collector** (`src/modules/collector/`)
+- **Ingestion** (`src/modules/ingestion/`)
+- **AI Processing** (`src/modules/ai-processing/`)
+- **Translation** (`src/modules/translation/`)
+- **Monitoring** (`src/common/`)
+
+Любые изменения в этих модулях требуют:
+
+1. **Архитектурный ревью** — обязательная оценка влияния на существующие модули
+   и бизнес-пайплайн.
+2. **Обновление документации** — `ARCHITECTURE.md`, `MODULE_BOUNDARIES.md`
+   должны быть обновлены синхронно с кодом.
+3. **Явное одобрение** — изменение не может быть замержено без подтверждения
+   владельца архитектуры.
+
+Исключения из freeze: исправление критических багов и security-уязвимостей
+(с последующим полным обновлением документации).
+
+## 6. Защита проектной документации
+
+Следующие документы считаются **единственным источником правды**
+(single source of truth) для проекта WireDeck:
+
+- `docs/ARCHITECTURE.md`
+- `docs/ROADMAP.md`
+- `docs/MODULE_BOUNDARIES.md`
+
+**`docs/ROADMAP.md` НЕ ДОЛЖЕН изменяться автоматически** в процессе реализации
+будущих фич. Изменения в Roadmap вносятся только осознанным решением
+владельца проекта/архитектора.
+
+## 7. Жизненный цикл новости (News Lifecycle)
 
 ```
 Sources
@@ -129,7 +164,7 @@ Telegram channel
 | QUEUED    | REJECTED    | Moderation (Sprint 7) |
 | APPROVED  | PUBLISHED   | Publishing (Sprint 8) |
 
-## 6. Языковая политика
+## 8. Языковая политика
 
 - **Английский (`en`) — язык по умолчанию.**
 - Модель перевода: `sourceLanguage → translatedText`.
@@ -140,14 +175,14 @@ Telegram channel
   JSONB или миграции БД для расширения языковой поддержки.
 - Текущая архитектура перевода остаётся неизменной.
 
-## 7. Слой данных
+## 9. Слой данных
 
 - **ORM:** TypeORM.
 - **База:** PostgreSQL (`DB_*` env vars).
 - **Кеш/очереди:** Redis (`REDIS_URL`).
 - **Миграции:** `src/database/migrations/`; `data-source.ts` — конфиг.
 
-## 8. Инфраструктура
+## 10. Инфраструктура
 
 ```
 infra/docker/
@@ -159,7 +194,7 @@ infra/docker/
 - CI/CD: `.github/workflows/` (lint, test, build, docker).
 - Sentry DSN, API ключи через переменные окружения (`.env`).
 
-## 9. Roadmap
+## 11. Roadmap
 
 | Sprint | Название                          | Статус |
 |--------|-----------------------------------|--------|
