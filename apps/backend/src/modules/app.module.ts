@@ -11,6 +11,7 @@ import { CollectorModule } from './collector/collector.module'; // Модуль 
 import { IngestionModule } from './ingestion/ingestion.module'; // Модуль оркестрации сбора новостей
 import { AiProcessingModule } from './ai-processing/ai-processing.module'; // Модуль AI-обработки новостей
 import { TranslationModule } from './translation/translation.module'; // Модуль перевода новостей
+import { ModerationModule } from './moderation/moderation.module'; // Модуль модерации новостей
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { TranslationModule } from './translation/translation.module'; // Мод�
     IngestionModule, // Модуль оркестрации сбора новостей
     AiProcessingModule, // Модуль AI-обработки новостей
     TranslationModule, // Модуль перевода новостей
+    ModerationModule, // Модуль модерации новостей
   ],
   controllers: [], // Здесь будут регистрироваться контроллеры
   providers: [], // Здесь будут регистрироваться сервисы
