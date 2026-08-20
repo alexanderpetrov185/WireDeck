@@ -10,6 +10,13 @@ import { PublishingResult } from './publishing-result.interface';
  * Сервис публикации новостей в Telegram.
  * Обрабатывает только news со статусом APPROVED.
  * Разрешённые переходы: APPROVED → PUBLISHED.
+ *
+ * Sprint 8.5 hardening:
+ * - Атомарный claim (conditional UPDATE) защищает от дубликатов
+ *   при конкурентных publish-запросах и повторных попытках.
+ * - Telegram вызывается только ПОСЛЕ успешного claim.
+ * - Если Telegram успешно отправил сообщение, но DB update не прошёл,
+ *   повторная попытка НЕ отправляет дубликат: статус уже PUBLISHED.
  */
 @Injectable()
 export class PublishingService {
@@ -26,52 +33,66 @@ export class PublishingService {
    * @param id ID новости
    */
   async publishOne(id: string): Promise<PublishingResult> {
-    const news = await this.newsService.findById(id);
-    if (!news) {
-      this.logger.warn(`News not found for publishing: ${id}`, this.context);
-      return { processed: 0, skipped: 0, errors: 1 };
-    }
+    // Атомарный claim: APPROVED -> PUBLISHED.
+    // Побеждает только один из конкурентных запросов; остальные получат false.
+    const claimed = await this.newsService.claimForPublishing(id);
 
-    // Идемпотентность: уже опубликована -> skip
-    if (news.status === NewsStatus.PUBLISHED) {
-      this.logger.debug(`News ${id} is already published, skipping`, this.context);
-      return { processed: 0, skipped: 1, errors: 0 };
-    }
+    if (!claimed) {
+      // Проверяем, почему claim не удался — для точного результата.
+      const news = await this.newsService.findById(id);
 
-    // Разрешён только переход APPROVED → PUBLISHED
-    if (news.status !== NewsStatus.APPROVED) {
+      if (!news) {
+        this.logger.warn(`News not found for publishing: ${id}`, this.context);
+        return { processed: 0, skipped: 0, errors: 1 };
+      }
+
+      if (news.status === NewsStatus.PUBLISHED) {
+        // Идемпотентность: уже опубликована (в т.ч. если повторная попытка
+        // после Telegram success + DB failure) -> skip, без повторной отправки.
+        this.logger.debug(`News ${id} is already published, skipping`, this.context);
+        return { processed: 0, skipped: 1, errors: 0 };
+      }
+
+      // Любой другой статус (или новость уже захвачена другим процессом).
       this.logger.warn(`News ${id} is in status ${news.status}, cannot publish (requires APPROVED)`, this.context);
       return { processed: 0, skipped: 0, errors: 1 };
     }
 
-    // Формируем текст публикации
-    let text = '';
-    if (news.title) {
-      text += `${news.title}\n\n`;
-    }
-    if (news.translatedText) {
-      text += `${news.translatedText}`;
-    } else if (news.summary) {
-      text += `${news.summary}`;
-    } else {
-      text += `${news.rawText}`;
-    }
-    if (news.sourceUrl) {
-      text += `\n\nSource: ${news.sourceName || news.source || ''} (${news.sourceUrl})`;
+    // Claim успешен. Формируем текст публикации.
+    const news = await this.newsService.findById(id);
+    if (!news) {
+      // Не должно происходить после успешного claim, но защищаемся.
+      this.logger.error(`News ${id} disappeared after claim`, undefined, this.context);
+      await this.newsService.revertPublishingClaim(id);
+      return { processed: 0, skipped: 0, errors: 1 };
     }
 
+    const text = this.buildText(news);
+
     try {
-      const telegramMessageId = await this.publisher.publish(text.trim());
-      
-      await this.newsService.update(id, {
-        status: NewsStatus.PUBLISHED,
-        telegramMessageId,
-      });
+      const telegramMessageId = await this.publisher.publish(text);
+
+      // Сохраняем telegramMessageId. Если DB update не пройдёт — новость
+      // останется в PUBLISHED (без message_id), повторная попытка не создаст дубликат.
+      const marked = await this.newsService.markPublished(id, telegramMessageId);
+
+      if (!marked) {
+        this.logger.error(
+          `Failed to persist telegramMessageId for news ${id} (status no longer PUBLISHED). ` +
+            `Message was sent to Telegram, but DB was not updated.`,
+          undefined,
+          this.context,
+        );
+        return { processed: 0, skipped: 0, errors: 1 };
+      }
 
       this.logger.log(`News ${id} successfully published to Telegram, message ID: ${telegramMessageId}`, this.context);
       return { processed: 1, skipped: 0, errors: 0 };
     } catch (error) {
+      // Telegram не отправил сообщение — возвращаем claim обратно в APPROVED,
+      // чтобы можно было безопасно повторить. message_id пуст -> revert безопасен.
       const msg = error instanceof Error ? error.message : String(error);
+      await this.newsService.revertPublishingClaim(id);
       this.logger.error(`Failed to publish news ${id}: ${msg}`, error instanceof Error ? error.stack : undefined, this.context);
       return { processed: 0, skipped: 0, errors: 1 };
     }
@@ -105,5 +126,27 @@ export class PublishingService {
     );
 
     return result;
+  }
+
+  /**
+   * Формирует текст публикации из новости.
+   * @param news Новость
+   */
+  private buildText(news: { title: string | null; translatedText: string | null; summary: string | null; rawText: string; sourceUrl: string | null; sourceName: string | null; source?: string }): string {
+    let text = '';
+    if (news.title) {
+      text += `${news.title}\n\n`;
+    }
+    if (news.translatedText) {
+      text += `${news.translatedText}`;
+    } else if (news.summary) {
+      text += `${news.summary}`;
+    } else {
+      text += `${news.rawText}`;
+    }
+    if (news.sourceUrl) {
+      text += `\n\nSource: ${news.sourceName || news.source || ''} (${news.sourceUrl})`;
+    }
+    return text.trim();
   }
 }

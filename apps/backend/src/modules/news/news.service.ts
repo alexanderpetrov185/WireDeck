@@ -59,6 +59,57 @@ export class NewsService {
     return this.findById(id);
   }
 
+  /**
+   * Атомарный claim новости для публикации (Sprint 8.5 hardening).
+   * Выполняет conditional UPDATE: только если статус APPROVED.
+   * Это защищает от дубликатов при конкурентных publish-запросах
+   * и от повторной отправки в Telegram, если DB update ранее не прошёл.
+   * @param id ID новости
+   * @returns true если новость была захвачена (status APPROVED -> PUBLISHED), иначе false
+   */
+  async claimForPublishing(id: string): Promise<boolean> {
+    const result = await this.newsRepository.update(
+      { id, status: NewsStatus.APPROVED },
+      { status: NewsStatus.PUBLISHED },
+    );
+    return (result.affected ?? 0) > 0;
+  }
+
+  /**
+   * Атомарное сохранение telegramMessageId вместе с финальным статусом.
+   * Обновляет только новости, уже захваченные для публикации (status PUBLISHED).
+   * @param id ID новости
+   * @param telegramMessageId ID сообщения в Telegram
+   * @returns true, если сообщение сохранено, иначе false
+   */
+  async markPublished(id: string, telegramMessageId: string): Promise<boolean> {
+    const result = await this.newsRepository.update(
+      { id, status: NewsStatus.PUBLISHED },
+      { telegramMessageId },
+    );
+    return (result.affected ?? 0) > 0;
+  }
+
+  /**
+   * Откат claim после неудачной публикации.
+   * Возвращает новость в статус APPROVED, только если она была
+   * захвачена (PUBLISHED) и telegram ещё не записан (telegram_message_id IS NULL).
+   * Это позволяет безопасно повторить публикацию без дубликатов.
+   * @param id ID новости
+   * @returns true, если откат выполнен, иначе false
+   */
+  async revertPublishingClaim(id: string): Promise<boolean> {
+    const result = await this.newsRepository
+      .createQueryBuilder()
+      .update(News)
+      .set({ status: NewsStatus.APPROVED })
+      .where('id = :id', { id })
+      .andWhere('status = :status', { status: NewsStatus.PUBLISHED })
+      .andWhere('telegram_message_id IS NULL')
+      .execute();
+    return (result.affected ?? 0) > 0;
+  }
+
   // Обновление статуса новости (переход по пайплайну)
   async updateStatus(id: string, status: NewsStatus): Promise<News | null> {
     return this.update(id, { status });

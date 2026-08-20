@@ -48,6 +48,9 @@ describe('PublishingService', () => {
             findById: jest.fn(),
             findByStatus: jest.fn(),
             update: jest.fn(),
+            claimForPublishing: jest.fn(),
+            markPublished: jest.fn(),
+            revertPublishingClaim: jest.fn(),
           },
         },
         {
@@ -80,50 +83,48 @@ describe('PublishingService', () => {
   describe('publishOne', () => {
     it('should successfully publish APPROVED news to Telegram and update status', async () => {
       const news = mockNews({ status: NewsStatus.APPROVED });
+      (newsService.claimForPublishing as jest.Mock).mockResolvedValue(true);
       (newsService.findById as jest.Mock).mockResolvedValue(news);
       (publisher.publish as jest.Mock).mockResolvedValue('123456');
-      (newsService.update as jest.Mock).mockResolvedValue({
-        ...news,
-        status: NewsStatus.PUBLISHED,
-        telegramMessageId: '123456',
-      });
+      (newsService.markPublished as jest.Mock).mockResolvedValue(true);
 
       const result = await service.publishOne('uuid-1');
 
       expect(result).toEqual({ processed: 1, skipped: 0, errors: 0 });
+      expect(newsService.claimForPublishing).toHaveBeenCalledWith('uuid-1');
       expect(publisher.publish).toHaveBeenCalledWith(
         expect.stringContaining('Translated text content'),
       );
-      expect(newsService.update).toHaveBeenCalledWith('uuid-1', {
-        status: NewsStatus.PUBLISHED,
-        telegramMessageId: '123456',
-      });
+      expect(newsService.markPublished).toHaveBeenCalledWith('uuid-1', '123456');
     });
 
     it('should skip already PUBLISHED news (idempotency)', async () => {
       const news = mockNews({ status: NewsStatus.PUBLISHED, telegramMessageId: '123456' });
+      (newsService.claimForPublishing as jest.Mock).mockResolvedValue(false);
       (newsService.findById as jest.Mock).mockResolvedValue(news);
 
       const result = await service.publishOne('uuid-1');
 
       expect(result).toEqual({ processed: 0, skipped: 1, errors: 0 });
       expect(publisher.publish).not.toHaveBeenCalled();
-      expect(newsService.update).not.toHaveBeenCalled();
+      expect(newsService.markPublished).not.toHaveBeenCalled();
     });
 
     it('should reject invalid status transitions (e.g. RAW)', async () => {
       const news = mockNews({ status: NewsStatus.RAW });
+      (newsService.claimForPublishing as jest.Mock).mockResolvedValue(false);
       (newsService.findById as jest.Mock).mockResolvedValue(news);
 
       const result = await service.publishOne('uuid-1');
 
       expect(result).toEqual({ processed: 0, skipped: 0, errors: 1 });
       expect(publisher.publish).not.toHaveBeenCalled();
-      expect(newsService.update).not.toHaveBeenCalled();
+      expect(newsService.markPublished).not.toHaveBeenCalled();
     });
 
     it('should reject invalid status transitions (e.g. QUEUED)', async () => {
       const news = mockNews({ status: NewsStatus.QUEUED });
+      (newsService.claimForPublishing as jest.Mock).mockResolvedValue(false);
       (newsService.findById as jest.Mock).mockResolvedValue(news);
 
       const result = await service.publishOne('uuid-1');
@@ -133,6 +134,7 @@ describe('PublishingService', () => {
     });
 
     it('should handle news not found', async () => {
+      (newsService.claimForPublishing as jest.Mock).mockResolvedValue(false);
       (newsService.findById as jest.Mock).mockResolvedValue(null);
 
       const result = await service.publishOne('nonexistent');
@@ -141,15 +143,74 @@ describe('PublishingService', () => {
       expect(publisher.publish).not.toHaveBeenCalled();
     });
 
-    it('should handle Telegram API failures gracefully', async () => {
+    it('should handle Telegram API failures gracefully and revert claim', async () => {
       const news = mockNews({ status: NewsStatus.APPROVED });
+      (newsService.claimForPublishing as jest.Mock).mockResolvedValue(true);
       (newsService.findById as jest.Mock).mockResolvedValue(news);
       (publisher.publish as jest.Mock).mockRejectedValue(new Error('Network Error'));
+      (newsService.revertPublishingClaim as jest.Mock).mockResolvedValue(true);
 
       const result = await service.publishOne('uuid-1');
 
       expect(result).toEqual({ processed: 0, skipped: 0, errors: 1 });
-      expect(newsService.update).not.toHaveBeenCalled();
+      expect(newsService.revertPublishingClaim).toHaveBeenCalledWith('uuid-1');
+      expect(newsService.markPublished).not.toHaveBeenCalled();
+    });
+
+    it('should not send duplicate to Telegram when DB update fails after Telegram success', async () => {
+      const news = mockNews({ status: NewsStatus.APPROVED });
+      // Первая попытка: claim успешен, Telegram успешно отправил, но markPublished вернул false (DB failure).
+      (newsService.claimForPublishing as jest.Mock).mockResolvedValueOnce(true);
+      (newsService.findById as jest.Mock).mockResolvedValueOnce(news);
+      (publisher.publish as jest.Mock).mockResolvedValueOnce('123456');
+      (newsService.markPublished as jest.Mock).mockResolvedValueOnce(false);
+
+      const firstResult = await service.publishOne('uuid-1');
+      expect(firstResult).toEqual({ processed: 0, skipped: 0, errors: 1 });
+
+      // Повторная попытка: новость уже PUBLISHED (claim не удался), Telegram НЕ вызывается.
+      const publishedNews = mockNews({ status: NewsStatus.PUBLISHED, telegramMessageId: null });
+      (newsService.claimForPublishing as jest.Mock).mockResolvedValueOnce(false);
+      (newsService.findById as jest.Mock).mockResolvedValueOnce(publishedNews);
+
+      const secondResult = await service.publishOne('uuid-1');
+      expect(secondResult).toEqual({ processed: 0, skipped: 1, errors: 0 });
+      expect(publisher.publish).toHaveBeenCalledTimes(1); // только один раз
+    });
+
+    it('should not send duplicate when concurrent publish attempts race (only one wins claim)', async () => {
+      const news = mockNews({ status: NewsStatus.APPROVED });
+      // Первый запрос выигрывает claim.
+      (newsService.claimForPublishing as jest.Mock).mockResolvedValueOnce(true);
+      (newsService.findById as jest.Mock).mockResolvedValueOnce(news);
+      (publisher.publish as jest.Mock).mockResolvedValueOnce('11111');
+      (newsService.markPublished as jest.Mock).mockResolvedValueOnce(true);
+
+      // Второй запрос проигрывает claim (новость уже PUBLISHED).
+      const publishedNews = mockNews({ status: NewsStatus.PUBLISHED, telegramMessageId: '11111' });
+      (newsService.claimForPublishing as jest.Mock).mockResolvedValueOnce(false);
+      (newsService.findById as jest.Mock).mockResolvedValueOnce(publishedNews);
+
+      const [result1, result2] = await Promise.all([
+        service.publishOne('uuid-1'),
+        service.publishOne('uuid-1'),
+      ]);
+
+      expect(result1).toEqual({ processed: 1, skipped: 0, errors: 0 });
+      expect(result2).toEqual({ processed: 0, skipped: 1, errors: 0 });
+      expect(publisher.publish).toHaveBeenCalledTimes(1); // только один раз
+    });
+
+    it('should revert claim if news disappears after claim', async () => {
+      (newsService.claimForPublishing as jest.Mock).mockResolvedValue(true);
+      (newsService.findById as jest.Mock).mockResolvedValue(null);
+      (newsService.revertPublishingClaim as jest.Mock).mockResolvedValue(true);
+
+      const result = await service.publishOne('uuid-1');
+
+      expect(result).toEqual({ processed: 0, skipped: 0, errors: 1 });
+      expect(newsService.revertPublishingClaim).toHaveBeenCalledWith('uuid-1');
+      expect(publisher.publish).not.toHaveBeenCalled();
     });
   });
 
@@ -158,11 +219,12 @@ describe('PublishingService', () => {
       const news1 = mockNews({ id: 'uuid-1', status: NewsStatus.APPROVED });
       const news2 = mockNews({ id: 'uuid-2', status: NewsStatus.APPROVED });
       (newsService.findByStatus as jest.Mock).mockResolvedValue([news1, news2]);
+      (newsService.claimForPublishing as jest.Mock).mockResolvedValue(true);
       (newsService.findById as jest.Mock)
         .mockResolvedValueOnce(news1)
         .mockResolvedValueOnce(news2);
       (publisher.publish as jest.Mock).mockResolvedValue('11111');
-      (newsService.update as jest.Mock).mockResolvedValue({});
+      (newsService.markPublished as jest.Mock).mockResolvedValue(true);
 
       const result = await service.publishPending(50);
 
@@ -176,6 +238,7 @@ describe('PublishingService', () => {
       const news2 = mockNews({ id: 'uuid-2', status: NewsStatus.APPROVED });
       const news3 = mockNews({ id: 'uuid-3', status: NewsStatus.APPROVED });
       (newsService.findByStatus as jest.Mock).mockResolvedValue([news1, news2, news3]);
+      (newsService.claimForPublishing as jest.Mock).mockResolvedValue(true);
       (newsService.findById as jest.Mock)
         .mockResolvedValueOnce(news1)
         .mockResolvedValueOnce(news2)
@@ -185,6 +248,8 @@ describe('PublishingService', () => {
         .mockResolvedValueOnce('11111')
         .mockRejectedValueOnce(new Error('Telegram error'))
         .mockResolvedValueOnce('33333');
+      (newsService.markPublished as jest.Mock).mockResolvedValue(true);
+      (newsService.revertPublishingClaim as jest.Mock).mockResolvedValue(true);
 
       const result = await service.publishPending(50);
 
