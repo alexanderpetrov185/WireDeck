@@ -33,3 +33,4 @@
 | TD-018 | Health check pings external `https://docs.nestjs.com` — could fail in offline/air-gapped environments | MEDIUM | False negative health status | Sprint 11 | OPEN |
 | TD-019 | No tests for `NewsService` (only ingestion/translation/collector/hash tests exist) | MEDIUM | Core domain service has no unit test coverage | Sprint 11 | OPEN |
 | TD-020 | Frontend `page.tsx` imports `useState`, `useEffect` with `'use client'` but relies on simulated data; no API client layer exists | MEDIUM | No real backend communication from frontend | Sprint 10 (Frontend Admin) | OPEN |
+| TD-021 | `TRANSLATED → QUEUED` transition not implemented — news never enters moderation queue automatically | MEDIUM | Pipeline break — news stays in TRANSLATED, never reaches moderation | Sprint 7.2 | RESOLVED |

@@ -12,6 +12,7 @@ import { IngestionModule } from './ingestion/ingestion.module'; // Модуль 
 import { AiProcessingModule } from './ai-processing/ai-processing.module'; // Модуль AI-обработки новостей
 import { TranslationModule } from './translation/translation.module'; // Модуль перевода новостей
 import { ModerationModule } from './moderation/moderation.module'; // Модуль модерации новостей
+import { PublishingModule } from './publishing/publishing.module'; // Модуль публикации новостей
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { ModerationModule } from './moderation/moderation.module'; // Модул
     AiProcessingModule, // Модуль AI-обработки новостей
     TranslationModule, // Модуль перевода новостей
     ModerationModule, // Модуль модерации новостей
+    PublishingModule, // Модуль публикации новостей
   ],
   controllers: [], // Здесь будут регистрироваться контроллеры
   providers: [], // Здесь будут регистрироваться сервисы

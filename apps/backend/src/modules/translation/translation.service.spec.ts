@@ -80,11 +80,11 @@ describe('TranslationService', () => {
     expect(service).toBeDefined();
   });
 
-  it('should successfully translate one news', async () => {
+  it('should successfully translate one news and queue for moderation', async () => {
     const news = mockNews({ status: NewsStatus.PROCESSED, summary: 'Original summary' });
     (newsService.findById as jest.Mock).mockResolvedValue(news);
     (translationProvider.translate as jest.Mock).mockResolvedValue('Переведённая выжимка');
-    (newsService.update as jest.Mock).mockResolvedValue({ ...news, translatedText: 'Переведённая выжимка', status: NewsStatus.TRANSLATED });
+    (newsService.update as jest.Mock).mockResolvedValue({ ...news, translatedText: 'Переведённая выжимка', status: NewsStatus.QUEUED });
 
     const result = await service.translateOne('uuid-1', 'en');
 
@@ -92,7 +92,7 @@ describe('TranslationService', () => {
     expect(translationProvider.translate).toHaveBeenCalledWith('Original summary', 'en');
     expect(newsService.update).toHaveBeenCalledWith('uuid-1', {
       translatedText: 'Переведённая выжимка',
-      status: NewsStatus.TRANSLATED,
+      status: NewsStatus.QUEUED,
     });
   });
 
@@ -116,16 +116,20 @@ describe('TranslationService', () => {
     expect(translationProvider.translate).not.toHaveBeenCalled();
   });
 
-  it('should re-translate TRANSLATED news with force', async () => {
+  it('should re-translate TRANSLATED news with force and queue for moderation', async () => {
     const news = mockNews({ status: NewsStatus.TRANSLATED, summary: 'Original summary', translatedText: 'Old translation' });
     (newsService.findById as jest.Mock).mockResolvedValue(news);
     (translationProvider.translate as jest.Mock).mockResolvedValue('New translation');
-    (newsService.update as jest.Mock).mockResolvedValue({ ...news, translatedText: 'New translation', status: NewsStatus.TRANSLATED });
+    (newsService.update as jest.Mock).mockResolvedValue({ ...news, translatedText: 'New translation', status: NewsStatus.QUEUED });
 
     const result = await service.translateOne('uuid-1', 'en', true);
 
     expect(result).toEqual({ processed: 1, skipped: 0, errors: 0 });
     expect(translationProvider.translate).toHaveBeenCalledWith('Original summary', 'en');
+    expect(newsService.update).toHaveBeenCalledWith('uuid-1', {
+      translatedText: 'New translation',
+      status: NewsStatus.QUEUED,
+    });
   });
 
   it('should skip news with empty summary', async () => {
@@ -188,7 +192,47 @@ describe('TranslationService', () => {
     );
   });
 
-  it('should process batch of PROCESSED news', async () => {
+  it('should skip QUEUED news (already in moderation queue)', async () => {
+    const news = mockNews({ status: NewsStatus.QUEUED, summary: 'Original summary', translatedText: 'Already translated' });
+    (newsService.findById as jest.Mock).mockResolvedValue(news);
+
+    const result = await service.translateOne('uuid-1', 'en');
+
+    expect(result).toEqual({ processed: 0, skipped: 1, errors: 0 });
+    expect(translationProvider.translate).not.toHaveBeenCalled();
+  });
+
+  it('should skip APPROVED news', async () => {
+    const news = mockNews({ status: NewsStatus.APPROVED, summary: 'Original summary', translatedText: 'Already translated' });
+    (newsService.findById as jest.Mock).mockResolvedValue(news);
+
+    const result = await service.translateOne('uuid-1', 'en');
+
+    expect(result).toEqual({ processed: 0, skipped: 1, errors: 0 });
+    expect(translationProvider.translate).not.toHaveBeenCalled();
+  });
+
+  it('should skip PUBLISHED news', async () => {
+    const news = mockNews({ status: NewsStatus.PUBLISHED, summary: 'Original summary', translatedText: 'Already translated' });
+    (newsService.findById as jest.Mock).mockResolvedValue(news);
+
+    const result = await service.translateOne('uuid-1', 'en');
+
+    expect(result).toEqual({ processed: 0, skipped: 1, errors: 0 });
+    expect(translationProvider.translate).not.toHaveBeenCalled();
+  });
+
+  it('should skip REJECTED news', async () => {
+    const news = mockNews({ status: NewsStatus.REJECTED, summary: 'Original summary', translatedText: 'Already translated' });
+    (newsService.findById as jest.Mock).mockResolvedValue(news);
+
+    const result = await service.translateOne('uuid-1', 'en');
+
+    expect(result).toEqual({ processed: 0, skipped: 1, errors: 0 });
+    expect(translationProvider.translate).not.toHaveBeenCalled();
+  });
+
+  it('should process batch of PROCESSED news and queue them for moderation', async () => {
     const news1 = mockNews({ id: 'uuid-1', status: NewsStatus.PROCESSED, summary: 'Summary 1' });
     const news2 = mockNews({ id: 'uuid-2', status: NewsStatus.PROCESSED, summary: 'Summary 2' });
     (newsService.findByStatus as jest.Mock).mockResolvedValue([news1, news2]);
@@ -202,6 +246,14 @@ describe('TranslationService', () => {
 
     expect(result).toEqual({ processed: 2, skipped: 0, errors: 0 });
     expect(translationProvider.translate).toHaveBeenCalledTimes(2);
+    expect(newsService.update).toHaveBeenCalledWith('uuid-1', {
+      translatedText: 'Перевод',
+      status: NewsStatus.QUEUED,
+    });
+    expect(newsService.update).toHaveBeenCalledWith('uuid-2', {
+      translatedText: 'Перевод',
+      status: NewsStatus.QUEUED,
+    });
   });
 
   it('should skip already translated in batch without force', async () => {
@@ -241,7 +293,7 @@ describe('TranslationService', () => {
     expect(translationProvider.translate).toHaveBeenCalledTimes(3);
   });
 
-  it('should include TRANSLATED news in batch with force', async () => {
+  it('should include TRANSLATED news in batch with force and queue them', async () => {
     const processedNews = mockNews({ id: 'uuid-1', status: NewsStatus.PROCESSED, summary: 'Summary 1' });
     const translatedNews = mockNews({ id: 'uuid-2', status: NewsStatus.TRANSLATED, summary: 'Summary 2', translatedText: 'Old' });
     (newsService.findByStatus as jest.Mock)
@@ -258,6 +310,14 @@ describe('TranslationService', () => {
     expect(result).toEqual({ processed: 2, skipped: 0, errors: 0 });
     expect(newsService.findByStatus).toHaveBeenCalledWith(NewsStatus.PROCESSED, 50);
     expect(newsService.findByStatus).toHaveBeenCalledWith(NewsStatus.TRANSLATED, 50);
+    expect(newsService.update).toHaveBeenCalledWith('uuid-1', {
+      translatedText: 'Перевод',
+      status: NewsStatus.QUEUED,
+    });
+    expect(newsService.update).toHaveBeenCalledWith('uuid-2', {
+      translatedText: 'Перевод',
+      status: NewsStatus.QUEUED,
+    });
   });
 
   it('should handle empty batch', async () => {

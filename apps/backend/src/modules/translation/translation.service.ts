@@ -9,6 +9,7 @@ import { TranslationResult } from './translation-result.interface';
 /**
  * Сервис перевода сохранённых новостей.
  * Обрабатывает только status=PROCESSED (перевод RAW напрямую запрещён).
+ * После успешного перевода новость автоматически переходит в QUEUED (очередь модерации).
  * Повторный запуск уже переведённой новости (status=TRANSLATED) без force пропускается.
  */
 @Injectable()
@@ -23,6 +24,7 @@ export class TranslationService {
 
   /**
    * Перевод одной новости по ID.
+   * После успешного перевода новость переходит в QUEUED (очередь модерации).
    * @param id ID новости
    * @param targetLanguage Целевой язык перевода
    * @param force Перевести, даже если уже TRANSLATED
@@ -37,6 +39,17 @@ export class TranslationService {
     // RAW → TRANSLATED запрещено: перевод только после AI Processing (PROCESSED)
     if (news.status === NewsStatus.RAW) {
       this.logger.warn(`News ${id} is RAW, skipping translation (requires AI Processing first)`, this.context);
+      return { processed: 0, skipped: 1, errors: 0 };
+    }
+
+    // Не переводим новости, которые уже в модерации или прошли её
+    if (
+      news.status === NewsStatus.QUEUED ||
+      news.status === NewsStatus.APPROVED ||
+      news.status === NewsStatus.PUBLISHED ||
+      news.status === NewsStatus.REJECTED
+    ) {
+      this.logger.debug(`News ${id} is ${news.status}, skipping translation`, this.context);
       return { processed: 0, skipped: 1, errors: 0 };
     }
 
@@ -56,9 +69,9 @@ export class TranslationService {
       const translatedText = await this.translationProvider.translate(news.summary, targetLanguage);
       await this.newsService.update(id, {
         translatedText,
-        status: NewsStatus.TRANSLATED,
+        status: NewsStatus.QUEUED, // После перевода новость попадает в очередь модерации
       });
-      this.logger.log(`News ${id} translated to ${targetLanguage}`, this.context);
+      this.logger.log(`News ${id} translated to ${targetLanguage} and queued for moderation`, this.context);
       return { processed: 1, skipped: 0, errors: 0 };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
