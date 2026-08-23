@@ -23,6 +23,10 @@ async function bootstrap() {
   // Создание экземпляра приложения с использованием главного модуля
   const app = await NestFactory.create(AppModule);
 
+  // Включение shutdown hooks для корректного graceful shutdown
+  // BullMQ Worker/Queue, Scheduler и остальных ресурсов (Sprint 9).
+  app.enableShutdownHooks();
+
   // Получение сервиса конфигурации для получения настроек
   const configService = app.get(ConfigService);
   

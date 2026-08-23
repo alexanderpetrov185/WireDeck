@@ -79,6 +79,17 @@ WireDeck НЕ является универсальной платформой �
 - **Logger:** `LoggerService` (Winston).
 - **Metrics:** `MetricsService` + Prometheus (`/metrics` endpoint).
 
+### 3.8 Pipeline / Scheduler (`src/modules/pipeline/`) — Sprint 9
+- **Назначение:** автоматический запуск существующего pipeline через BullMQ + Redis.
+- **SchedulerService:** периодический запуск (SCHEDULER_ENABLED, PIPELINE_INTERVAL_MS);
+  дедупликация через фиксированный jobId (active/waiting → skip; completed/failed → новый job).
+- **PipelineService:** оркестрация Ingestion → AI Processing → Translation → Moderation → Publishing.
+  Ошибки отдельных шагов изолированы и не останавливают остальные pending-based шаги.
+- **PipelineProcessor:** BullMQ Worker handler; job-level необработанные ошибки → BullMQ retry.
+- **Очередь:** `wiredeck-pipeline`; конфигурация: concurrency=1, attempts, exponential backoff.
+- **Ручной запуск:** `POST /pipeline/trigger` (TokenGuard).
+- **Значения env:** `SCHEDULER_ENABLED=false`, `PIPELINE_INTERVAL_MS=600000`, `PIPELINE_BATCH_LIMIT=50`.
+
 ## 4. Архитектурные ограничения
 
 - **Collector → запрещено** импортировать `NewsService` / TypeORM.

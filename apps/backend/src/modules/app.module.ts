@@ -13,6 +13,7 @@ import { AiProcessingModule } from './ai-processing/ai-processing.module'; // М
 import { TranslationModule } from './translation/translation.module'; // Модуль перевода новостей
 import { ModerationModule } from './moderation/moderation.module'; // Модуль модерации новостей
 import { PublishingModule } from './publishing/publishing.module'; // Модуль публикации новостей
+import { PipelineModule } from './pipeline/pipeline.module'; // Модуль Scheduler + BullMQ (Sprint 9)
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { PublishingModule } from './publishing/publishing.module'; // Модул
     TranslationModule, // Модуль перевода новостей
     ModerationModule, // Модуль модерации новостей
     PublishingModule, // Модуль публикации новостей
+    PipelineModule, // Модуль Scheduler + BullMQ (Sprint 9)
   ],
   controllers: [], // Здесь будут регистрироваться контроллеры
   providers: [], // Здесь будут регистрироваться сервисы
