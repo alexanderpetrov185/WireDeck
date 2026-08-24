@@ -1,11 +1,13 @@
 // Контроллер метрик Prometheus
 // Предоставляет эндпоинт /metrics для сбора метрик
-
-import { Controller, Get, Res, Header } from '@nestjs/common';
+// Sprint 11 cleanup: защищён TokenGuard — метрики не отдаются без токена.
+import { Controller, Get, Res, Header, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { MetricsService } from './metrics.service';
+import { TokenGuard } from '../guards/token.guard';
 
 @Controller('metrics')
+@UseGuards(TokenGuard)
 export class MetricsController {
   constructor(private readonly metricsService: MetricsService) {}
 
@@ -17,3 +19,4 @@ export class MetricsController {
     res.send(metrics);
   }
 }
+

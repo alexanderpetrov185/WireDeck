@@ -65,19 +65,42 @@ WireDeck НЕ является универсальной платформой �
 
 ### 3.5 Translation (`src/modules/translation/`)
 - **Назначение:** перевод `summary` на целевой язык.
-- **Архитектурные ограничения:** обрабатывает **только** `PROCESSED`; ставит статус `TRANSLATED`.
+- **Архитектурные ограничения:** обрабатывает **только** `PROCESSED`.
+- **Статус после перевода:** в основном pipeline ставится `QUEUED`
+  (новость сразу попадает в очередь модерации). Статус `TRANSLATED` существует
+  в enum и используется force-переводом, но не является основным потоком.
 - **DI:** провайдер регистрируется через токен `TRANSLATION_PROVIDER`.
-- **Idempotency:** повторный запуск для `TRANSLATED` без `force` — скип.
+- **Idempotency:** повторный запуск для `QUEUED`/`APPROVED`/`PUBLISHED` без `force` — скип.
 - **Endpoint'ы:** `POST /translation/run` (batch), `POST /translation/run/:id` (single).
 
-### 3.6 Content Enrichment (планируется)
-- **Назначение:** обогащение контента перед публикацией (теги, ссылки, форматирование).
-- **Статус:** планируется в будущих спринтах.
+### 3.6 Content Enrichment
+- **НЕ реализован и не входит в текущий roadmap.**
+  Обогащение контента (теги, ссылки, форматирование) — потенциальное будущее направление.
+
+### 3.7 Moderation (`src/modules/moderation/`) — Sprint 7
+- **Назначение:** QUEUED → APPROVED / REJECTED; batch auto-approve (`approvePending`).
+- Ручное: `POST /moderation/approve/:id?moderator=`, `POST /moderation/reject/:id?moderator=&reason=`
+  (TokenGuard). Audit: `moderatedBy`, `moderatedAt`, `rejectionReason`.
+
+### 3.8 Publishing (`src/modules/publishing/`) — Sprint 8/8.5
+- **Назначение:** APPROVED → PUBLISHED → Telegram channel (Telegram-centric).
+- Atomic claim (conditional UPDATE), Telegram send, markPublished;
+  revert claim при ошибке Telegram (только если message_id ещё пуст).
+- Stuck detection (Sprint 11): sweeper + метрика `publishing_stuck_news` +
+  `GET /pipeline/stuck`. Auto-recovery НЕ выполняется (риск дублей) — см. docs/FAILURE_MODES.md.
+- Провайдер: Telegram Bot API (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL_ID`).
 
 ### 3.7 Monitoring (`src/common/`)
 - **Sentry:** `initSentry`, `captureException`, `captureMessage`, `setSentryContext`, `setSentryUser`.
 - **Logger:** `LoggerService` (Winston).
-- **Metrics:** `MetricsService` + Prometheus (`/metrics` endpoint).
+- **Metrics:** `MetricsService` + Prometheus (`/metrics` endpoint, TokenGuard).
+- **Health:** `/health` (DB+Redis), `/health/live`, `/health/ready` (Sprint 11).
+
+### 3.9 Frontend Admin (`apps/frontend/`) — Sprint 10
+- Next.js App Router; BFF Route Handlers `src/app/api/admin/*` проксируют backend,
+  добавляя `x-ingestion-token` server-side (`lib/server/backend-client.ts`).
+- Browser не обращается к backend напрямую; INGESTION_TOKEN не попадает в client bundle.
+- Страницы: Dashboard, News list, News details, Moderation.
 
 ### 3.8 Pipeline / Scheduler (`src/modules/pipeline/`) — Sprint 9
 - **Назначение:** автоматический запуск существующего pipeline через BullMQ + Redis.
@@ -136,7 +159,7 @@ WireDeck НЕ является универсальной платформой �
 ## 7. Жизненный цикл новости (News Lifecycle)
 
 ```
-Sources
+Sources (RSS)
   ↓
 Collectors
   ↓
@@ -150,30 +173,32 @@ AI Processing            (только RAW → PROCESSED)
   ↓
 News [status = PROCESSED]
   ↓
-Translation              (только PROCESSED → TRANSLATED, EN default)
+Translation              (PROCESSED → QUEUED, translatedText пишется сразу, EN default)
   ↓
-News [status = TRANSLATED]
+News [status = QUEUED]
   ↓
-Moderation               (ещё не реализован)
+Moderation               (QUEUED → APPROVED / REJECTED; batch auto-approve + ручная модерация)
   ↓
-Content Enrichment       (ещё не реализован)
-  ↓
-Publishing               (ещё не реализован)
+Publishing               (APPROVED → PUBLISHED → Telegram; atomic claim)
   ↓
 Telegram channel
+
+Content Enrichment: НЕ реализован и не входит в текущий roadmap.
+Статус TRANSLATED существует в enum (force-перевод), но основной поток: processed → queued.
 ```
 
-### Транзиции статусов
+### Транзиции статусов (фактические)
 
 | From      | To          | Кто делает       |
 |-----------|-------------|------------------|
+| —         | RAW         | Ingestion        |
 | RAW       | PROCESSED   | AI Processing     |
-| PROCESSED | TRANSLATED  | Translation       |
-| TRANSLATED| TRANSLATED  | Translation (force) |
-| TRANSLATED| QUEUED      | Moderation (Sprint 7) |
-| QUEUED    | APPROVED    | Moderation (Sprint 7) |
-| QUEUED    | REJECTED    | Moderation (Sprint 7) |
-| APPROVED  | PUBLISHED   | Publishing (Sprint 8) |
+| PROCESSED | QUEUED      | Translation (основной поток) |
+| PROCESSED | PROCESSED   | Translation (skip без изменений) |
+| QUEUED    | APPROVED    | Moderation (batch auto + ручное approve) |
+| QUEUED    | REJECTED    | Moderation (reject с reason) |
+| APPROVED  | PUBLISHED   | Publishing (atomic claim) |
+| PUBLISHED | APPROVED    | Publishing revert (только при ошибке Telegram и пустом message_id) |
 
 ## 8. Языковая политика
 
@@ -190,7 +215,7 @@ Telegram channel
 
 - **ORM:** TypeORM.
 - **База:** PostgreSQL (`DB_*` env vars).
-- **Кеш/очереди:** Redis (`REDIS_URL`).
+- **Кеш/очереди:** Redis (`REDIS_HOST` / `REDIS_PORT`; BullMQ connection).
 - **Миграции:** `src/database/migrations/`; `data-source.ts` — конфиг.
 
 ## 10. Инфраструктура

@@ -55,3 +55,13 @@
 
 ### Sprint 11 — Reliability + Production Readiness
 - Graceful shutdown, health checks, tracing, Sentry source maps.
+
+---
+## Статус реализации (обновлено после Sprint 11)
+
+- Sprint 8 (Publishing) — РЕАЛИЗОВАН
+- Sprint 8.5 (Publishing hardening) — РЕАЛИЗОВАН
+- Sprint 9 (Scheduler + BullMQ) — РЕАЛИЗОВАН
+- Sprint 10 (Frontend Admin) — РЕАЛИЗОВАН
+- Sprint 11 (Reliability + Observability) — РЕАЛИЗОВАН
+- Content Enrichment — НЕ реализован и НЕ входит в текущий roadmap

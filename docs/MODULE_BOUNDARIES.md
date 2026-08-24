@@ -52,4 +52,5 @@ Frontend (Next.js) общается с backend (NestJS) ТОЛЬКО по HTTP. 
 | AI_PROVIDER | AiProvider | AiProviderModule |
 | TRANSLATION_PROVIDER | TranslationProvider | TranslationProviderModule |
 | NEWS_COLLECTORS | NewsCollector[] | CollectorModule |
-| INGESTION_TOKEN | string (guard) | IngestionModule |
+| PIPELINE_QUEUE | BullMQ Queue | PipelineModule (используется также HealthModule) |
+| INGESTION_TOKEN | string (TokenGuard, `src/common/guards/token.guard.ts`) | общий; применяется ко всем защищённым endpoints (Ingestion, AI, Translation, Moderation, Publishing, Pipeline, News, Metrics) |
