@@ -1,15 +1,14 @@
 // Модуль проверки состояния приложения
 import { Module } from '@nestjs/common';
-import { TerminusModule } from '@nestjs/terminus'; // Модуль для проверки состояния сервисов
-import { HttpModule } from '@nestjs/axios'; // Модуль для HTTP запросов
-import { HealthController } from './health.controller'; // Контроллер для эндпоинтов проверки состояния
+import { TerminusModule } from '@nestjs/terminus';
+import { HealthController } from './health.controller';
+// PipelineModule даёт доступ к существующему BullMQ Queue (PIPELINE_QUEUE)
+// — Redis проверяется через него без второго клиента.
+import { PipelineModule } from '../modules/pipeline/pipeline.module';
 
 @Module({
-  // Подключение необходимых модулей для проверки состояния
-  imports: [TerminusModule, HttpModule],
-  // Регистрация контроллера проверки состояния
+  imports: [TerminusModule, PipelineModule],
   controllers: [HealthController],
-  providers: [], // Здесь будут регистрироваться сервисы для проверки состояния
+  providers: [],
 })
-// Модуль для проверки состояния приложения
 export class HealthModule {}

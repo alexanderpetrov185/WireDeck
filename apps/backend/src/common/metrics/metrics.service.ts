@@ -11,6 +11,9 @@ import {
   queueJobsTotal,
   queueJobDuration,
   queueSize,
+  queueJobCounts,
+  queueJobsStalledTotal,
+  publishingStuckNews,
   getMetrics,
 } from './metrics.config';
 
@@ -47,6 +50,29 @@ export class MetricsService {
   updateQueueSize(queueName: string, size: number) {
     queueSize.set({ queue_name: queueName }, size);
   }
+
+  /**
+   * Реальные счётчики BullMQ по состояниям (Sprint 11).
+   * @param counts Результат queue.getJobCounts() (waiting/active/...)
+   */
+  setQueueJobCounts(queueName: string, counts: Record<string, number>) {
+    for (const [state, value] of Object.entries(counts)) {
+      if (typeof value === 'number') {
+        queueJobCounts.set({ queue_name: queueName, state }, value);
+      }
+    }
+  }
+
+  // Инкремент счётчика stalled job'ов (Sprint 11)
+  incQueueStalled(queueName: string) {
+    queueJobsStalledTotal.inc({ queue_name: queueName });
+  }
+
+  // Gauge застрявших публикаций (Sprint 8.5 detection). ID — только в логах.
+  setPublishingStuck(count: number) {
+    publishingStuckNews.set(count);
+  }
+
 
   // Получение количества метрик (для отладки)
   getMetricsCount(): number {

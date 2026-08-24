@@ -2,6 +2,8 @@ import { Provider } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Queue, Worker, ConnectionOptions } from 'bullmq';
 import { LoggerService } from '../../common/logger/logger.service';
+import { MetricsService } from '../../common/metrics/metrics.service';
+import { captureException } from '../../common/sentry/sentry.config';
 import { PipelineProcessor } from './pipeline.processor';
 import {
   PIPELINE_QUEUE_NAME,
@@ -73,8 +75,13 @@ export const pipelineQueueProvider: Provider = {
  */
 export const pipelineWorkerProvider: Provider = {
   provide: PIPELINE_WORKER,
-  inject: [ConfigService, PipelineProcessor, LoggerService],
-  useFactory: (config: ConfigService, processor: PipelineProcessor, logger: LoggerService): Worker => {
+  inject: [ConfigService, PipelineProcessor, LoggerService, MetricsService],
+  useFactory: (
+    config: ConfigService,
+    processor: PipelineProcessor,
+    logger: LoggerService,
+    metrics: MetricsService,
+  ): Worker => {
     const worker = new Worker(
       PIPELINE_QUEUE_NAME,
       async (job) => processor.process(job),
@@ -94,6 +101,13 @@ export const pipelineWorkerProvider: Provider = {
       );
     });
 
+    // Stalled: worker потерял lock на job (restart/GC pause/сеть).
+    // BullMQ сам вернёт job в обработку — здесь только observability.
+    worker.on('stalled', (jobId) => {
+      metrics.incQueueStalled('wiredeck-pipeline');
+      logger.warn(`Pipeline job ${jobId} stalled (lock lost). BullMQ will retry it.`, 'PipelineWorker');
+    });
+
     worker.on('completed', (job) => {
       logger.log(`Pipeline job ${job.id} completed`, 'PipelineWorker');
     });
@@ -105,6 +119,7 @@ export const pipelineWorkerProvider: Provider = {
         error instanceof Error ? error.stack : undefined,
         'PipelineWorker',
       );
+      captureException(error, { jobId: job?.id, queue: 'wiredeck-pipeline' });
     });
 
     return worker;

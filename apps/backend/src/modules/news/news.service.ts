@@ -3,7 +3,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, LessThan, Repository } from 'typeorm';
 import { News, NewsStatus } from './entities/news.entity';
 import { LoggerService } from '../../common/logger/logger.service';
 
@@ -136,6 +136,25 @@ export class NewsService {
   async countByStatus(status: NewsStatus): Promise<number> {
     return this.newsRepository.count({ where: { status } });
   }
+
+  /**
+   * Застрявшие публикации (Sprint 11, Sprint 8.5 crash window):
+   * статус PUBLISHED, telegram_message_id пуст, обновлены раньше порога.
+   * ТОЛЬКО чтение — detection/observability, никаких изменений данных.
+   * @param olderThanMs Возраст записи (по updatedAt), считающийся "застрявшей"
+   */
+  async findStuckPublished(olderThanMs: number): Promise<News[]> {
+    const threshold = new Date(Date.now() - olderThanMs);
+    return this.newsRepository.find({
+      where: {
+        status: NewsStatus.PUBLISHED,
+        telegramMessageId: IsNull(),
+        updatedAt: LessThan(threshold),
+      },
+      order: { updatedAt: 'ASC' },
+    });
+  }
+
 
   // Удаление новости
   async remove(id: string): Promise<void> {

@@ -9,6 +9,7 @@ import { PublishingService } from '../publishing/publishing.service';
 import { PublishingResult } from '../publishing/publishing-result.interface';
 import { LoggerService } from '../../common/logger/logger.service';
 import { MetricsService } from '../../common/metrics/metrics.service';
+import { captureException } from '../../common/sentry/sentry.config';
 import { ConfigService } from '@nestjs/config';
 import { DEFAULT_PIPELINE_BATCH_LIMIT } from './pipeline.constants';
 
@@ -129,6 +130,11 @@ export class PipelineService {
       const msg = error instanceof Error ? error.message : String(error);
       this.metrics.observeQueueJob('wiredeck-pipeline', name, 'failed', duration / 1000);
       this.logger.error(`Pipeline step "${name}" failed: ${msg}`, error instanceof Error ? error.stack : undefined, this.context);
+      // Sentry: только здесь (шаг не пробрасывается выше, worker 'failed' его
+      // не увидит — дублирования одного exception нет).
+      if (error instanceof Error) {
+        captureException(error, { pipelineStep: name });
+      }
       return {
         name,
         ok: false,

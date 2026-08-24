@@ -4,7 +4,8 @@ import { PipelineProcessor } from './pipeline.processor';
 import { PipelineController } from './pipeline.controller';
 import { PipelineLifecycle } from './pipeline.lifecycle';
 import { SchedulerService } from './scheduler.service';
-import { pipelineQueueProvider, pipelineWorkerProvider } from './pipeline.queue';
+import { QueueStatsService } from './queue-stats.service';
+import { pipelineQueueProvider, pipelineWorkerProvider, PIPELINE_QUEUE } from './pipeline.queue';
 import { IngestionModule } from '../ingestion/ingestion.module';
 import { AiProcessingModule } from '../ai-processing/ai-processing.module';
 import { TranslationModule } from '../translation/translation.module';
@@ -25,9 +26,10 @@ import { PublishingModule } from '../publishing/publishing.module';
     PipelineProcessor,
     PipelineLifecycle,
     SchedulerService,
+    QueueStatsService,
     pipelineQueueProvider,
     pipelineWorkerProvider,
   ],
-  exports: [PipelineService, SchedulerService],
+  exports: [PipelineService, SchedulerService, PIPELINE_QUEUE],
 })
 export class PipelineModule {}

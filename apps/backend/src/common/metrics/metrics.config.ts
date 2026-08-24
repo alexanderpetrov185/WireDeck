@@ -70,6 +70,31 @@ export const queueSize = new promClient.Gauge({
   registers: [register],
 });
 
+// 7a. Gauges реальных счётчиков BullMQ по состояниям (Sprint 11).
+export const queueJobCounts = new promClient.Gauge({
+  name: 'queue_job_counts',
+  help: 'BullMQ job counts by state',
+  labelNames: ['queue_name', 'state'],
+  registers: [register],
+});
+
+// 7b. Счётчик stalled job'ов (worker lost lock / restart) (Sprint 11).
+export const queueJobsStalledTotal = new promClient.Counter({
+  name: 'queue_jobs_stalled_total',
+  help: 'Total number of stalled queue jobs',
+  labelNames: ['queue_name'],
+  registers: [register],
+});
+
+// 7c. Gauge застрявших публикаций: PUBLISHED без telegram_message_id
+// старше порога (Sprint 8.5 crash window). БЕЗ label с news_id —
+// ID остаётся только в логах/Sentry (low-cardinality requirement).
+export const publishingStuckNews = new promClient.Gauge({
+  name: 'publishing_stuck_news',
+  help: 'News published without telegram_message_id older than threshold (crash between claim and Telegram publish)',
+  registers: [register],
+});
+
 // 8. Информация о приложении
 export const appInfo = new promClient.Gauge({
   name: 'app_info',

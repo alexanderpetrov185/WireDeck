@@ -14,7 +14,7 @@
 | ID | Description | Priority | Impact | Planned Sprint | Status |
 |----|-------------|----------|--------|----------------|--------|
 | TD-001 | `@sentry/tracing` removed from package.json; verify no Sentry tracing features are lost | MEDIUM | Sentry tracing sample rates still work via `@sentry/node`, but no explicit tracing package | Sprint 11 (Reliability) | OPEN |
-| TD-002 | Frontend admin panel contains hardcoded mock data (newsCount=42, botStatus='online', fake news table) | MEDIUM | Users see fake data; no real backend integration | Sprint 10 (Frontend Admin) | OPEN |
+| TD-002 | Frontend admin panel contains hardcoded mock data (newsCount=42, botStatus='online', fake news table) | MEDIUM | Users see fake data; no real backend integration | Sprint 10 (Frontend Admin) | RESOLVED (Sprint 10) |
 | TD-003 | `eslint.config.js` triggers MODULE_TYPELESS_PACKAGE_JSON warning in backend | LOW | Performance overhead on lint startup; confusing warning | Sprint 11 | OPEN |
 | TD-004 | TypeScript `baseUrl` is deprecated (TS 7.0 will remove it); tsconfig needs `ignoreDeprecations: "6.0"` or restructure | LOW | Build will break when upgrading to TS 7.0 | Sprint 11 | OPEN |
 | TD-005 | Jest globals (`describe`, `test`, `expect`) not recognized by tsconfig types; requires explicit `@types/jest` in types field | MEDIUM | IDE shows false TypeScript errors in spec files | Sprint 11 | OPEN |
@@ -30,7 +30,8 @@
 | TD-015 | TranslationService validates target language via `NewsLanguage` enum, but `targetLanguage` is passed as loose `string` type in service | LOW | Type safety gap; could be narrowed to `NewsLanguage` | Sprint 11 | OPEN |
 | TD-016 | `translatePending` with `force` may process duplicate IDs (PROCESSED + TRANSLATED overlap) | LOW | Potential double-processing edge case | Sprint 11 | OPEN |
 | TD-017 | `News` entity `telegramMessageId` stored as `bigint` string; TypeORM may return it as string or number inconsistently | MEDIUM | Potential serialization issues in API responses | Sprint 8 (Publishing) | OPEN |
-| TD-018 | Health check pings external `https://docs.nestjs.com` — could fail in offline/air-gapped environments | MEDIUM | False negative health status | Sprint 11 | OPEN |
+| TD-018 | Health check pings external `https://docs.nestjs.com` — could fail in offline/air-gapped environments | MEDIUM | False negative health status | Sprint 11 | RESOLVED (Sprint 11: /health проверяет DB + Redis через BullMQ connection; добавлены /health/live и /health/ready) |
 | TD-019 | No tests for `NewsService` (only ingestion/translation/collector/hash tests exist) | MEDIUM | Core domain service has no unit test coverage | Sprint 11 | OPEN |
-| TD-020 | Frontend `page.tsx` imports `useState`, `useEffect` with `'use client'` but relies on simulated data; no API client layer exists | MEDIUM | No real backend communication from frontend | Sprint 10 (Frontend Admin) | OPEN |
+| TD-020 | Frontend `page.tsx` imports `useState`, `useEffect` with `'use client'` but relies on simulated data; no API client layer exists | MEDIUM | No real backend communication from frontend | Sprint 10 (Frontend Admin) | RESOLVED (Sprint 10) |
 | TD-021 | `TRANSLATED → QUEUED` transition not implemented — news never enters moderation queue automatically | MEDIUM | Pipeline break — news stays in TRANSLATED, never reaches moderation | Sprint 7.2 | RESOLVED |
+| TD-022 | Stuck publishing after crash between claim and Telegram publish (Sprint 8.5 window): PUBLISHED without telegram_message_id is invisible and unrecoverable automatically | HIGH | Silent loss of published news; manual DB fix required; auto-retry risks Telegram duplicates | Sprint 11 (Reliability) | PARTIALLY RESOLVED (Sprint 11: detection via `publishing_stuck_news` metric + sweeper + GET /pipeline/stuck + docs/FAILURE_MODES.md FM-1; auto-recovery intentionally NOT implemented — duplicate risk) |

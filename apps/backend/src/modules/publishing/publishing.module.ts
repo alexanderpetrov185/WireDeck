@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { PublishingService } from './publishing.service';
 import { PublishingController } from './publishing.controller';
+import { PublishingStuckSweeperService } from './publishing-stuck-sweeper.service';
 import { TelegramPublisherProvider } from './providers/telegram-publisher.provider';
 import { PUBLISHER_TOKEN } from './providers/publisher.token';
 import { NewsModule } from '../news/news.module';
@@ -16,11 +17,13 @@ import { NewsModule } from '../news/news.module';
   controllers: [PublishingController],
   providers: [
     PublishingService,
+    PublishingStuckSweeperService,
     {
       provide: PUBLISHER_TOKEN,
       useClass: TelegramPublisherProvider,
     },
   ],
-  exports: [PublishingService],
+  exports: [PublishingService, PublishingStuckSweeperService],
 })
 export class PublishingModule {}
+
