@@ -98,7 +98,13 @@ services:
       # Next.js standalone server.js читает PORT (по умолчанию 3000).
       # Явно задаем 3001, чтобы контейнер слушал порт, проброшенный наружу.
       - PORT=3001
-      - NEXT_PUBLIC_API_URL=http://localhost:3000
+      # Server-side BFF обращается к backend по имени сервиса в compose-сети.
+      - BACKEND_API_URL=http://backend:3000
+      # Токен только server-side (НЕ NEXT_PUBLIC_*), передается в backend
+      # заголовком x-ingestion-token из Route Handlers.
+      - INGESTION_TOKEN=${INGESTION_TOKEN}
+      # Имя модератора для /moderation/* (server-side).
+      - ADMIN_MODERATOR=${ADMIN_MODERATOR:-frontend-admin}
 
 volumes:
   postgres_data:

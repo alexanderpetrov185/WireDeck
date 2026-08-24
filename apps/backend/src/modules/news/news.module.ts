@@ -5,6 +5,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { News } from './entities/news.entity';
 import { NewsService } from './news.service';
+import { NewsController } from './news.controller';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { NewsService } from './news.service';
     // autoLoadEntities: true в AppModule подхватит её автоматически
     TypeOrmModule.forFeature([News]),
   ],
+  controllers: [NewsController],
   providers: [NewsService],
   // Экспорт сервиса и модуля репозиториев для использования другими модулями
   exports: [NewsService, TypeOrmModule],

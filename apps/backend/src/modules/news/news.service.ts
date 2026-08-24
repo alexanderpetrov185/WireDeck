@@ -53,6 +53,23 @@ export class NewsService {
     });
   }
 
+  /**
+   * Получение списка новостей с пагинацией и опциональным фильтром по статусу.
+   * Используется NewsController (Sprint 10 Frontend Admin).
+   * @param take Максимум записей (limit)
+   * @param skip Смещение
+   * @param status Опциональный фильтр по статусу
+   */
+  async findAll(take = 50, skip = 0, status?: NewsStatus): Promise<News[]> {
+    const where = status ? { status } : {};
+    return this.newsRepository.find({
+      where,
+      order: { createdAt: 'DESC' },
+      take,
+      skip,
+    });
+  }
+
   // Обновление полей новости
   async update(id: string, data: Partial<News>): Promise<News | null> {
     await this.newsRepository.update(id, data);
