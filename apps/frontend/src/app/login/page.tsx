@@ -19,12 +19,25 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // next для нативного form-fallback (без JS); обновляется после монтирования.
+  const [nextPath, setNextPath] = useState('/');
 
-  // Чистим адресную строку от следов старого GET-сабмита (?password=...).
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.search) {
-      window.history.replaceState(null, '', window.location.pathname);
+    if (typeof window === 'undefined') {
+      return;
     }
+    const params = new URLSearchParams(window.location.search);
+
+    // Ошибка нативного form-POST (?error=invalid).
+    if (params.get('error') === 'invalid') {
+      setError('Invalid password.');
+    }
+
+    // Чистим адресную строку от служебных/мусорных параметров
+    // (следы старого GET-сабмита с password и т.п.).
+    const next = params.get('next');
+    setNextPath(next && next.startsWith('/') && !next.startsWith('//') ? next : '/');
+    window.history.replaceState(null, '', window.location.pathname + (next ? `?next=${encodeURIComponent(next)}` : ''));
   }, []);
 
   function resolveNext(): string {
@@ -50,11 +63,10 @@ export default function LoginPage() {
         window.location.assign(resolveNext());
         return;
       }
-      const body = (await res.json().catch(() => null)) as { message?: string } | null;
       setError(
         res.status === 401
           ? 'Invalid password.'
-          : body?.message ?? `Login failed (HTTP ${res.status}).`,
+          : `Login failed (HTTP ${res.status}).`,
       );
     } catch {
       setError('Network error: unable to reach login API.');
@@ -66,17 +78,19 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
       <div className="w-full max-w-sm">
-        <div className="bg-white shadow-md rounded-lg px-8 py-8">
-          <h1 className="text-xl font-bold text-gray-900 text-center mb-1">WireDeck Admin</h1>
-          <p className="text-sm text-gray-500 text-center mb-6">Sign in to continue</p>
+        <div className="bg-white shadow-md rounded-lg px-8 py-10">
+          <h1 className="text-xl font-bold text-gray-900 text-center">WireDeck Admin</h1>
+          <p className="text-sm text-gray-500 text-center mt-2 mb-8">Sign in to continue</p>
           <form
             onSubmit={handleSubmit}
             method="post"
             action="/api/admin/auth/login"
-            className="space-y-4"
+            className="space-y-6"
           >
+            {/* Для нативного form-fallback: куда вернуть пользователя после логина. */}
+            <input type="hidden" name="next" value={nextPath} />
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Admin password
               </label>
               <input
@@ -99,7 +113,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-md bg-blue-600 px-4 py-2 text-white font-medium hover:bg-blue-700 focus:outline-none disabled:opacity-50"
+              className="w-full rounded-md bg-blue-600 px-4 py-2.5 text-white font-medium hover:bg-blue-700 focus:outline-none disabled:opacity-50"
             >
               {submitting ? 'Signing in…' : 'Sign in'}
             </button>
