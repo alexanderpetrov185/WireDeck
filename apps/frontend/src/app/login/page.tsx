@@ -1,24 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 /**
  * Страница логина админки.
  *
- * Специально БЕЗ useSearchParams/Suspense/useRouter:
- * - useSearchParams вызывает static-prerender bailout, и браузер получает
- *   только Suspense-fallback ("Loading…") до гидрации; при сбое JS-чанков
- *   пользователь навсегда видит лоадер вместо формы.
- * - Эта страница полностью статична в SSR-HTML: форма рендерится сразу,
- *   без ожидания admin API и без data-loading shell.
- * - `next` читается из window.location в момент сабмота;
- *   после успеха — hard navigation, чтобы middleware гарантированно
- *   увидел свежую cookie.
+ * Защита от утечки пароля в URL:
+ * - Основной путь: onSubmit -> preventDefault -> fetch POST JSON.
+ * - Fallback без JS: форма нативно постит method="post" action="/api/admin/..."
+ *   (никогда не GET), route handler принимает urlencoded body.
+ * - Если в URL уже есть ?password=... (след старого бага) — вычищаем
+ *   адресную строку через history.replaceState и игнорируем параметр.
+ *
+ * Без useSearchParams/Suspense: форма полностью статична в SSR-HTML,
+ * не зависит от гидрации, чтобы никогда не показывать вечный Loading.
  */
 export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Чистим адресную строку от следов старого GET-сабмита (?password=...).
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
 
   function resolveNext(): string {
     if (typeof window === 'undefined') {
@@ -29,7 +36,7 @@ export default function LoginPage() {
     return next && next.startsWith('/') && !next.startsWith('//') ? next : '/';
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
@@ -57,37 +64,48 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-[60vh] items-center justify-center">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-            Admin password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoFocus
-            autoComplete="current-password"
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none"
-          />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
+      <div className="w-full max-w-sm">
+        <div className="bg-white shadow-md rounded-lg px-8 py-8">
+          <h1 className="text-xl font-bold text-gray-900 text-center mb-1">WireDeck Admin</h1>
+          <p className="text-sm text-gray-500 text-center mb-6">Sign in to continue</p>
+          <form
+            onSubmit={handleSubmit}
+            method="post"
+            action="/api/admin/auth/login"
+            className="space-y-4"
+          >
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                Admin password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoFocus
+                autoComplete="current-password"
+                className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            {error && (
+              <p role="alert" className="text-sm text-red-600">
+                {error}
+              </p>
+            )}
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full rounded-md bg-blue-600 px-4 py-2 text-white font-medium hover:bg-blue-700 focus:outline-none disabled:opacity-50"
+            >
+              {submitting ? 'Signing in…' : 'Sign in'}
+            </button>
+          </form>
         </div>
-        {error && (
-          <p role="alert" className="text-sm text-red-600">
-            {error}
-          </p>
-        )}
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full rounded-md bg-blue-600 px-4 py-2 text-white font-medium hover:bg-blue-700 disabled:opacity-50"
-        >
-          {submitting ? 'Signing in…' : 'Sign in'}
-        </button>
-      </form>
+      </div>
     </div>
   );
 }

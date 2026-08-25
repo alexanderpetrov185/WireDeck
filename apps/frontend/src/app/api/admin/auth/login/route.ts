@@ -10,7 +10,8 @@ export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/admin/auth/login
- * Принимает { password }, сверяет с ADMIN_PASSWORD (constant-time),
+ * Принимает { password } (JSON) или application/x-www-form-urlencoded
+ * (native form fallback без JS). Сверяет с ADMIN_PASSWORD (constant-time),
  * при успехе ставит httpOnly session cookie для доступа к /api/admin/*.
  * Если ADMIN_PASSWORD не настроен — вход невозможен (безопасный дефолт).
  */
@@ -26,9 +27,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   let provided: string | undefined;
   try {
-    const body = (await req.json()) as { password?: unknown };
-    if (typeof body?.password === 'string') {
-      provided = body.password;
+    const contentType = req.headers.get('content-type') ?? '';
+    if (contentType.includes('application/json')) {
+      const body = (await req.json()) as { password?: unknown };
+      if (typeof body?.password === 'string') {
+        provided = body.password;
+      }
+    } else if (contentType.includes('application/x-www-form-urlencoded')) {
+      // Fallback для нативной отправки формы без JS.
+      const form = await req.formData();
+      const value = form.get('password');
+      if (typeof value === 'string') {
+        provided = value;
+      }
     }
   } catch {
     provided = undefined;
