@@ -8,9 +8,9 @@ export class IngestionController {
   constructor(private readonly ingestionService: IngestionService) {}
 
   /**
-   * Р СѓС‡РЅРѕР№ Р·Р°РїСѓСЃРє СЃР±РѕСЂР° РЅРѕРІРѕСЃС‚РµР№ РёР· RSS-Р»РµРЅС‚ Рё СЃРѕС…СЂР°РЅРµРЅРёСЏ РІ Р±Р°Р·Сѓ РґР°РЅРЅС‹С….
-   * Р РѕСѓС‚: POST /ingestion/rss
-   * РўСЂРµР±СѓРµС‚ Р·Р°РіРѕР»РѕРІРѕРє x-ingestion-token (СЃРј. INGESTION_TOKEN РІ env).
+   * Ручной запуск сбора новостей из RSS-лент и сохранения в базу данных.
+   * Роут: POST /ingestion/rss
+   * Требует заголовок x-ingestion-token (см. INGESTION_TOKEN в env).
    * @param since РћРїС†РёРѕРЅР°Р»СЊРЅР°СЏ РґР°С‚Р° С„РёР»СЊС‚СЂР°С†РёРё (РЅР°РїСЂРёРјРµСЂ: 2026-08-11T00:00:00Z)
    */
   @Post('rss')
