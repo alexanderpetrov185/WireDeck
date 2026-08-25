@@ -21,6 +21,8 @@ const ALLOWED_CATEGORIES = new Set([
 const DEFAULT_AI_MODEL = 'gpt-4o-mini';
 const DEFAULT_AI_URL = 'https://api.openai.com/v1/chat/completions';
 const AI_TIMEOUT_MS = 30000; // 30 секунд
+import { DEFAULT_AI_RATE_LIMIT_RETRIES as DEFAULT_RATE_LIMIT_RETRIES, DEFAULT_AI_RATE_LIMIT_BASE_DELAY_MS as DEFAULT_RATE_LIMIT_BASE_DELAY_MS } from '../../pipeline/pipeline.constants';
+import { RateLimitError, withRateLimitRetry } from '../../../common/rate-limit/rate-limited.client';
 
 /**
  * OpenAI-compatible провайдер через HTTP.
@@ -60,25 +62,34 @@ Article text:
 ${rawText.slice(0, 4000)}`;
 
     try {
-      const response = await firstValueFrom(
-        this.httpService.post(
-          url,
-          {
-            model,
-            temperature: 0.2,
-            messages: [
-              { role: 'system', content: 'You are a concise financial news summarizer.' },
-              { role: 'user', content: prompt },
-            ],
-          },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${apiKey}`,
-            },
-            timeout: AI_TIMEOUT_MS,
-          },
-        ),
+      const response = await withRateLimitRetry(
+        () =>
+          firstValueFrom(
+            this.httpService.post(
+              url,
+              {
+                model,
+                temperature: 0.2,
+                messages: [
+                  { role: 'system', content: 'You are a concise financial news summarizer.' },
+                  { role: 'user', content: prompt },
+                ],
+              },
+              {
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${apiKey}`,
+                },
+                timeout: AI_TIMEOUT_MS,
+              },
+            ),
+          ),
+        {
+          maxRetries: this.configService.get<number>('AI_RATE_LIMIT_RETRIES', DEFAULT_RATE_LIMIT_RETRIES),
+          baseDelayMs: this.configService.get<number>('AI_RATE_LIMIT_BASE_DELAY_MS', DEFAULT_RATE_LIMIT_BASE_DELAY_MS),
+          logger: this.logger,
+          logContext: this.context,
+        },
       );
 
       const content = response.data?.choices?.[0]?.message?.content;
@@ -88,6 +99,11 @@ ${rawText.slice(0, 4000)}`;
 
       return this.parseAiResponse(content);
     } catch (error) {
+      // RateLimitError пробрасываем как есть — batch-методы используют
+      // её для раннего выхода из цикла (defer remaining items).
+      if (error instanceof RateLimitError) {
+        throw error;
+      }
       const msg = error instanceof Error ? error.message : String(error);
       this.logger.error(`OpenAI request failed: ${msg}`, error instanceof Error ? error.stack : undefined, this.context);
       throw new Error(`AI provider error: ${msg}`);

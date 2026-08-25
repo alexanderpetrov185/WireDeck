@@ -5,6 +5,7 @@ import { TranslationProvider } from './translation-provider.interface';
 import { LoggerService } from '../../common/logger/logger.service';
 import { TRANSLATION_PROVIDER } from './translation-provider.token';
 import { TranslationResult } from './translation-result.interface';
+import { RateLimitError } from '../../common/rate-limit/rate-limited.client';
 
 /**
  * Сервис перевода сохранённых новостей.
@@ -74,6 +75,11 @@ export class TranslationService {
       this.logger.log(`News ${id} translated to ${targetLanguage} and queued for moderation`, this.context);
       return { processed: 1, skipped: 0, errors: 0 };
     } catch (error) {
+      // Sprint 12: rate limit пробрасывается — translatePending сделает ранний
+      // выход из batch и отложит остальные новости на следующий прогон.
+      if (error instanceof RateLimitError) {
+        throw error;
+      }
       const msg = error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to translate news ${id}: ${msg}`, error instanceof Error ? error.stack : undefined, this.context);
       return { processed: 0, skipped: 0, errors: 1 };
@@ -83,6 +89,8 @@ export class TranslationService {
   /**
    * Пакетный перевод новостей со статусом PROCESSED (и TRANSLATED при force).
    * Ошибка перевода одной новости не роняет остальной batch.
+   * Sprint 12: при rate limit (429 после ретраев) — ранний выход,
+   * оставшиеся новости считаются skipped (deferred на следующий прогон).
    * @param limit Максимум новостей за один прогон
    * @param targetLanguage Целевой язык перевода
    * @param force Перевести, даже если уже TRANSLATED
@@ -102,11 +110,24 @@ export class TranslationService {
 
     const result: TranslationResult = { processed: 0, skipped: 0, errors: 0 };
 
-    for (const news of newsItems) {
-      const oneItemResult = await this.translateOne(news.id, targetLanguage, force);
-      result.processed += oneItemResult.processed;
-      result.skipped += oneItemResult.skipped;
-      result.errors += oneItemResult.errors;
+    for (let i = 0; i < newsItems.length; i++) {
+      try {
+        const oneItemResult = await this.translateOne(newsItems[i].id, targetLanguage, force);
+        result.processed += oneItemResult.processed;
+        result.skipped += oneItemResult.skipped;
+        result.errors += oneItemResult.errors;
+      } catch (error) {
+        if (error instanceof RateLimitError) {
+          const deferred = newsItems.length - i;
+          result.skipped += deferred;
+          this.logger.warn(
+            `Translation rate limit reached, deferring ${deferred} remaining items to the next run`,
+            this.context,
+          );
+          break;
+        }
+        throw error;
+      }
     }
 
     this.logger.log(

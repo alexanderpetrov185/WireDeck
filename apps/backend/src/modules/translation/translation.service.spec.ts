@@ -6,6 +6,7 @@ import { LoggerService } from '../../common/logger/logger.service';
 import { TRANSLATION_PROVIDER } from './translation-provider.token';
 import { NewsLanguage } from '../news/constants/news-language.enum';
 import { NewsStatus } from '../news/entities/news.entity';
+import { RateLimitError } from '../../common/rate-limit/rate-limited.client';
 
 describe('TranslationService', () => {
   let service: TranslationService;
@@ -327,5 +328,43 @@ describe('TranslationService', () => {
 
     expect(result).toEqual({ processed: 0, skipped: 0, errors: 0 });
     expect(translationProvider.translate).not.toHaveBeenCalled();
+  });
+
+  it('should defer remaining batch items as skipped on rate limit', async () => {
+    const news1 = mockNews({ id: 'uuid-1', status: NewsStatus.PROCESSED, summary: 'Summary 1' });
+    const news2 = mockNews({ id: 'uuid-2', status: NewsStatus.PROCESSED, summary: 'Summary 2' });
+    const news3 = mockNews({ id: 'uuid-3', status: NewsStatus.PROCESSED, summary: 'Summary 3' });
+    (newsService.findByStatus as jest.Mock).mockResolvedValue([news1, news2, news3]);
+    (newsService.findById as jest.Mock).mockImplementation(async (id: string) => mockNews({ id, status: NewsStatus.PROCESSED, summary: `Summary ${id}` }));
+    (translationProvider.translate as jest.Mock)
+      .mockResolvedValueOnce('Перевод 1')
+      .mockRejectedValue(new RateLimitError());
+    (newsService.update as jest.Mock).mockResolvedValue({});
+
+    const result = await service.translatePending(50, 'en');
+
+    expect(result.processed).toBe(1);
+    expect(result.errors).toBe(0);
+    // uuid-2 упёрлась в rate limit, uuid-3 отложена.
+    expect(result.skipped).toBe(2);
+    expect(translationProvider.translate).toHaveBeenCalledTimes(2);
+    expect(loggerService.warn).toHaveBeenCalledWith(
+      expect.stringContaining('deferring 2'),
+      'TranslationService',
+    );
+  });
+
+  it('should not mark deferred news as translated in DB on rate limit', async () => {
+    const news1 = mockNews({ id: 'uuid-1', status: NewsStatus.PROCESSED, summary: 'Summary 1' });
+    const news2 = mockNews({ id: 'uuid-2', status: NewsStatus.PROCESSED, summary: 'Summary 2' });
+    (newsService.findByStatus as jest.Mock).mockResolvedValue([news1, news2]);
+    (newsService.findById as jest.Mock).mockImplementation(async (id: string) =>
+      mockNews({ id, status: NewsStatus.PROCESSED, summary: `Summary ${id}` }),
+    );
+    (translationProvider.translate as jest.Mock).mockRejectedValue(new RateLimitError());
+
+    await service.translatePending(50, 'en');
+
+    expect(newsService.update).not.toHaveBeenCalled();
   });
 });
