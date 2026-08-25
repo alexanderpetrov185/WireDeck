@@ -92,10 +92,25 @@ describe('PublishingService', () => {
 
       expect(result).toEqual({ processed: 1, skipped: 0, errors: 0 });
       expect(newsService.claimForPublishing).toHaveBeenCalledWith('uuid-1');
+      // Sprint 13: publish path использует общий formatter.
       expect(publisher.publish).toHaveBeenCalledWith(
-        expect.stringContaining('Translated text content'),
+        'Test Title\n\nTranslated text content\n\nSource: Test Feed — https://test.com/1',
       );
       expect(newsService.markPublished).toHaveBeenCalledWith('uuid-1', '123456');
+    });
+
+    it('should never send raw text sheet to Telegram (formatter fallback)', async () => {
+      const news = mockNews({ status: NewsStatus.APPROVED, translatedText: null, summary: null, rawText: 'raw '.repeat(3000) });
+      (newsService.claimForPublishing as jest.Mock).mockResolvedValue(true);
+      (newsService.findById as jest.Mock).mockResolvedValue(news);
+      (publisher.publish as jest.Mock).mockResolvedValue('123456');
+      (newsService.markPublished as jest.Mock).mockResolvedValue(true);
+
+      await service.publishOne('uuid-1');
+
+      const sent = (publisher.publish as jest.Mock).mock.calls[0][0] as string;
+      expect(sent.length).toBeLessThanOrEqual(3900);
+      expect(sent).toContain('Source: Test Feed — https://test.com/1');
     });
 
     it('should skip already PUBLISHED news (idempotency)', async () => {

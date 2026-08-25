@@ -5,6 +5,7 @@ import { Publisher } from './providers/publisher.interface';
 import { PUBLISHER_TOKEN } from './providers/publisher.token';
 import { LoggerService } from '../../common/logger/logger.service';
 import { PublishingResult } from './publishing-result.interface';
+import { buildTelegramMessage } from './telegram-message.formatter';
 
 /**
  * Сервис публикации новостей в Telegram.
@@ -67,7 +68,7 @@ export class PublishingService {
       return { processed: 0, skipped: 0, errors: 1 };
     }
 
-    const text = this.buildText(news);
+    const text = buildTelegramMessage(news);
 
     try {
       const telegramMessageId = await this.publisher.publish(text);
@@ -126,27 +127,5 @@ export class PublishingService {
     );
 
     return result;
-  }
-
-  /**
-   * Формирует текст публикации из новости.
-   * @param news Новость
-   */
-  private buildText(news: { title: string | null; translatedText: string | null; summary: string | null; rawText: string; sourceUrl: string | null; sourceName: string | null; source?: string }): string {
-    let text = '';
-    if (news.title) {
-      text += `${news.title}\n\n`;
-    }
-    if (news.translatedText) {
-      text += `${news.translatedText}`;
-    } else if (news.summary) {
-      text += `${news.summary}`;
-    } else {
-      text += `${news.rawText}`;
-    }
-    if (news.sourceUrl) {
-      text += `\n\nSource: ${news.sourceName || news.source || ''} (${news.sourceUrl})`;
-    }
-    return text.trim();
   }
 }
