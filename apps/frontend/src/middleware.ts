@@ -27,6 +27,12 @@ export async function middleware(req: NextRequest) {
     req.cookies.get(ADMIN_SESSION_COOKIE)?.value,
   );
 
+  // Уже залогинен и открыл /login — отправляем на запрошенную страницу.
+  if (pathname === '/login' && authenticated) {
+    const next = req.nextUrl.searchParams.get('next');
+    return NextResponse.redirect(new URL(next && next.startsWith('/') ? next : '/', req.url));
+  }
+
   if (pathname.startsWith('/api/admin/')) {
     if (!authenticated) {
       return NextResponse.json(
@@ -51,5 +57,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/admin/:path*', '/', '/news/:path*', '/moderation/:path*'],
+  matcher: ['/api/admin/:path*', '/', '/login', '/news/:path*', '/moderation/:path*'],
 };

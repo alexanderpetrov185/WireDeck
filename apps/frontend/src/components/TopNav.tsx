@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Dashboard' },
@@ -11,6 +11,22 @@ const NAV_ITEMS = [
 
 export default function TopNav() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  // На странице логина навигация по админке не нужна.
+  if (pathname === '/login') {
+    return null;
+  }
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/auth/logout', { method: 'POST' });
+    } catch {
+      // Даже при сбое сети уводим на логин — cookie может быть протухшей.
+    }
+    router.replace('/login');
+    router.refresh();
+  };
 
   return (
     <header className="bg-white shadow">
@@ -19,7 +35,7 @@ export default function TopNav() {
           <div className="flex items-center">
             <h1 className="text-xl font-bold text-gray-900">WireDeck Admin</h1>
           </div>
-          <nav className="flex space-x-4">
+          <nav className="flex items-center space-x-4">
             {NAV_ITEMS.map((item) => {
               const active = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
               return (
@@ -34,6 +50,13 @@ export default function TopNav() {
                 </Link>
               );
             })}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900"
+            >
+              Logout
+            </button>
           </nav>
         </div>
       </div>
