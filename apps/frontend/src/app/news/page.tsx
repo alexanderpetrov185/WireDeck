@@ -1,82 +1,67 @@
-'use client';
-
-import { useCallback, useEffect, useState } from 'react';
+// News list — Server Component (fix admin loading):
+// данные рендерятся на сервере; фильтр статуса — обычная GET-форма без JS.
 import Link from 'next/link';
+import { fetchFromBackend } from '@/lib/server/backend-client';
 import StatusBadge from '@/components/StatusBadge';
-import LoadingState from '@/components/LoadingState';
 import ErrorState from '@/components/ErrorState';
 import EmptyState from '@/components/EmptyState';
-import { getNews } from '@/lib/news-api';
-import { ApiClientError } from '@/lib/api-client';
 import { NewsItem, NewsStatus } from '@/lib/types';
 import { formatDate, formatImportance, sourceLabel } from '@/lib/news-labels';
 
-const PAGE_SIZE = 50;
+export const dynamic = 'force-dynamic';
 
-export default function NewsListPage() {
-  const [news, setNews] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<NewsStatus | ''>('');
+const PAGE_SIZE = 100;
+const STATUSES: NewsStatus[] = ['raw', 'processed', 'translated', 'queued', 'approved', 'published', 'rejected'];
 
-  const load = useCallback(async (status: NewsStatus | '', skip: number) => {
-    try {
-      const items = await getNews({
-        limit: PAGE_SIZE,
-        skip,
-        status: status || undefined,
-      });
-      return items;
-    } catch (e) {
-      const msg = e instanceof ApiClientError ? e.message : 'Failed to load news';
-      setError(msg);
-      return null;
-    }
-  }, []);
+export default async function NewsListPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const statusRaw = typeof params.status === 'string' ? params.status : '';
+  const statusFilter = STATUSES.includes(statusRaw as NewsStatus) ? (statusRaw as NewsStatus) : '';
 
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-    load(statusFilter, 0).then((items) => {
-      if (items) setNews(items);
-      setLoading(false);
-    });
-  }, [statusFilter, load]);
-
-  const handleLoadMore = async () => {
-    setLoadingMore(true);
-    const items = await load(statusFilter, news.length);
-    if (items) setNews((prev) => [...prev, ...items]);
-    setLoadingMore(false);
-  };
-
-  if (loading) {
-    return <LoadingState label="Loading news..." />;
-  }
-
-  if (error) {
-    return <ErrorState message={error} />;
+  let news: NewsItem[];
+  try {
+    const qs = new URLSearchParams({ limit: String(PAGE_SIZE), skip: '0' });
+    if (statusFilter) qs.set('status', statusFilter);
+    news = await fetchFromBackend<NewsItem[]>(`/news?${qs.toString()}`);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Failed to load news';
+    return (
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">News</h2>
+        <ErrorState message={msg} />
+      </div>
+    );
   }
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900">News</h2>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as NewsStatus | '')}
-          className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-        >
-          <option value="">All statuses</option>
-          <option value="raw">RAW</option>
-          <option value="processed">PROCESSED</option>
-          <option value="translated">TRANSLATED</option>
-          <option value="queued">QUEUED</option>
-          <option value="approved">APPROVED</option>
-          <option value="published">PUBLISHED</option>
-          <option value="rejected">REJECTED</option>
-        </select>
+        {/* GET-форма фильтра: работает без JS. */}
+        <form method="get" action="/news" className="flex items-center gap-2">
+          <label htmlFor="status" className="text-sm text-gray-500">Status</label>
+          <select
+            id="status"
+            name="status"
+            defaultValue={statusFilter}
+            className="rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+          >
+            <option value="">All statuses</option>
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>{s.toUpperCase()}</option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            className="rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200"
+          >
+            Apply
+          </button>
+        </form>
       </div>
 
       {news.length === 0 ? (
@@ -119,16 +104,9 @@ export default function NewsListPage() {
               </table>
             </div>
           </div>
-          <div className="mt-4">
-            <button
-              type="button"
-              onClick={handleLoadMore}
-              disabled={loadingMore}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loadingMore ? 'Loading...' : 'Load more'}
-            </button>
-          </div>
+          <p className="mt-3 text-xs text-gray-400">
+            Showing {news.length} item(s){statusFilter ? ` with status ${statusFilter.toUpperCase()}` : ''}.
+          </p>
         </>
       )}
     </div>

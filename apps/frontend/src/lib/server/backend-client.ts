@@ -1,7 +1,7 @@
 // Server-only helper для BFF Route Handlers.
 // Вызывает backend с x-ingestion-token. НИКОГДА не экспортируется в client bundle.
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * Возвращает backend base URL для server-side вызовов.
@@ -67,4 +67,48 @@ export async function proxyBackend(
   }
 
   return NextResponse.json(body, { status });
+}
+
+/**
+ * Server-side fetch данных из backend для Server Components.
+ * Бросает ошибку при неуспехе — страницы показывают ErrorState вместо вечного Loading.
+ */
+export async function fetchFromBackend<T>(path: string): Promise<T> {
+  const token = process.env.INGESTION_TOKEN;
+  if (!token) {
+    throw new Error('INGESTION_TOKEN is not configured on the server.');
+  }
+  const response = await fetch(`${getBackendBaseUrl()}${path}`, {
+    headers: { 'x-ingestion-token': token },
+    cache: 'no-store',
+  });
+  if (!response.ok) {
+    throw new Error(`Backend returned HTTP ${response.status} for ${path}`);
+  }
+  return (await response.json()) as T;
+}
+
+/**
+ * true, если запрос пришёл от нативной HTML-формы (fallback без JS).
+ */
+export function isFormPost(req: NextRequest): boolean {
+  return (req.headers.get('content-type') ?? '').includes(
+    'application/x-www-form-urlencoded',
+  );
+}
+
+/**
+ * 303 redirect с относительным Location (браузер резолвит против текущего хоста;
+ * абсолютный URL собрался бы с hostname контейнера и был бы недоступен снаружи).
+ */
+export function seeOther(path: string): NextResponse {
+  return new NextResponse(null, { status: 303, headers: { Location: path } });
+}
+
+/**
+ * Safe next path: только внутренние пути, начинающиеся с '/',
+ * без protocol-relative ('//') — защита от open redirect.
+ */
+export function safeNext(raw: FormDataEntryValue | null | undefined, fallback = '/'): string {
+  return typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//') ? raw : fallback;
 }
