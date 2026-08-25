@@ -36,6 +36,12 @@ export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T>
   }
 
   if (!response.ok) {
+    // Сессия истекла / отсутствует — отправляем на страницу логина.
+    if (response.status === 401 && typeof window !== 'undefined') {
+      const next = encodeURIComponent(window.location.pathname);
+      window.location.href = `/login?next=${next}`;
+      throw new ApiClientError('Authentication required', 401, 'unauthorized');
+    }
     let body: ApiError | null = null;
     try {
       body = (await response.json()) as ApiError;
