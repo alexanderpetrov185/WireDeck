@@ -1,22 +1,64 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NewsService } from '../news/news.service';
 import { NewsStatus } from '../news/entities/news.entity';
 import { LoggerService } from '../../common/logger/logger.service';
 import { ModerationResult } from './moderation-result.interface';
+import {
+  DEFAULT_MODERATION_AUTO_IMPORTANCE_MIN,
+  DEFAULT_MODERATION_MODE,
+  MODERATION_MODES,
+  ModerationMode,
+} from '../pipeline/pipeline.constants';
 
 /**
  * Сервис модерации новостей.
  * Обрабатывает только news со статусом QUEUED.
  * Разрешённые переходы: QUEUED → APPROVED, QUEUED → REJECTED.
+ *
+ * Sprint 14: moderation policy через MODERATION_MODE:
+ * - auto   — pipeline одобряет все QUEUED (как раньше);
+ * - manual — pipeline ничего не трогает, всё решает человек в админке;
+ * - hybrid — auto только для sufficiently important
+ *            (importance >= MODERATION_AUTO_IMPORTANCE_MIN), остальное ждёт человека.
  */
 @Injectable()
 export class ModerationService {
   private readonly context = 'ModerationService';
+  private readonly mode: ModerationMode;
+  private readonly autoImportanceMin: number;
 
   constructor(
     private readonly newsService: NewsService,
     private readonly logger: LoggerService,
-  ) {}
+    configService: ConfigService,
+  ) {
+    const rawMode = configService.get<string>('MODERATION_MODE', DEFAULT_MODERATION_MODE);
+    if (MODERATION_MODES.includes(rawMode as ModerationMode)) {
+      this.mode = rawMode as ModerationMode;
+    } else {
+      this.logger.warn(
+        `Invalid MODERATION_MODE "${rawMode}", falling back to "${DEFAULT_MODERATION_MODE}"`,
+        this.context,
+      );
+      this.mode = DEFAULT_MODERATION_MODE;
+    }
+
+    const rawMin = configService.get<number>(
+      'MODERATION_AUTO_IMPORTANCE_MIN',
+      DEFAULT_MODERATION_AUTO_IMPORTANCE_MIN,
+    );
+    const parsedMin = Number(rawMin);
+    if (isNaN(parsedMin) || parsedMin < 0 || parsedMin > 1) {
+      this.logger.warn(
+        `Invalid MODERATION_AUTO_IMPORTANCE_MIN "${rawMin}", using default ${DEFAULT_MODERATION_AUTO_IMPORTANCE_MIN}`,
+        this.context,
+      );
+      this.autoImportanceMin = DEFAULT_MODERATION_AUTO_IMPORTANCE_MIN;
+    } else {
+      this.autoImportanceMin = parsedMin;
+    }
+  }
 
   /**
    * Одобрение одной новости.
@@ -123,27 +165,53 @@ export class ModerationService {
 
   /**
    * Пакетное одобрение всех новостей, ожидающих модерации (status=QUEUED).
+   * Sprint 14: поведение зависит от MODERATION_MODE:
+   * - manual: no-op — очередь ждёт человека в админке;
+   * - auto: одобряются все QUEUED (moderator='system');
+   * - hybrid: auto только при importance >= MODERATION_AUTO_IMPORTANCE_MIN.
    * Ошибка одобрения одной новости не роняет остальной batch.
    * @param limit Максимум новостей за один прогон
    */
   async approvePending(limit = 50): Promise<ModerationResult> {
     const queuedNews = await this.newsService.findByStatus(NewsStatus.QUEUED, limit);
-    this.logger.log(`Found ${queuedNews.length} news to moderate`, this.context);
+
+    if (this.mode === 'manual') {
+      this.logger.log(
+        `Moderation mode is manual: ${queuedNews.length} item(s) awaiting review in admin panel`,
+        this.context,
+      );
+      return { processed: 0, skipped: queuedNews.length, errors: 0 };
+    }
+
+    this.logger.log(`Found ${queuedNews.length} news to moderate (mode: ${this.mode})`, this.context);
 
     const result: ModerationResult = { processed: 0, skipped: 0, errors: 0 };
 
     for (const news of queuedNews) {
-      // В batch-режиме модератором считается система
+      // В batch-режиме модератором считается система.
+      if (this.mode === 'hybrid') {
+        if (typeof news.importance !== 'number' || news.importance < this.autoImportanceMin) {
+          result.skipped += 1;
+          continue;
+        }
+      }
       const oneItemResult = await this.approveOne(news.id, 'system');
       result.processed += oneItemResult.processed;
       result.skipped += oneItemResult.skipped;
       result.errors += oneItemResult.errors;
     }
 
-    this.logger.log(
-      `Moderation complete. Processed: ${result.processed}, Skipped: ${result.skipped}, Errors: ${result.errors}`,
-      this.context,
-    );
+    if (this.mode === 'hybrid') {
+      this.logger.log(
+        `hybrid: approved ${result.processed}, left queued ${result.skipped} (threshold=${this.autoImportanceMin})`,
+        this.context,
+      );
+    } else {
+      this.logger.log(
+        `Moderation complete. Processed: ${result.processed}, Skipped: ${result.skipped}, Errors: ${result.errors}`,
+        this.context,
+      );
+    }
 
     return result;
   }
