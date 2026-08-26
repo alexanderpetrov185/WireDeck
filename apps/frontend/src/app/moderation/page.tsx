@@ -6,13 +6,39 @@ import { fetchFromBackend } from '@/lib/server/backend-client';
 import StatusBadge from '@/components/StatusBadge';
 import ErrorState from '@/components/ErrorState';
 import EmptyState from '@/components/EmptyState';
-import { NewsItem, NewsStatus } from '@/lib/types';
+import TopNav from '@/components/TopNav';
+import { NewsItem, NewsStatus, NewsStats } from '@/lib/types';
 import { formatDate, formatImportance } from '@/lib/news-labels';
 
 export const dynamic = 'force-dynamic';
 
 const PAGE_SIZE = 100;
 const STATUSES: NewsStatus[] = ['queued', 'approved', 'rejected', 'processed', 'translated'];
+
+/** Кликабельный чип фильтра статуса с count (если известен). */
+function Chip({ href, active, label, count }: { href: string; active: boolean; label: string; count?: number }) {
+  return (
+    <Link
+      href={href}
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border ${
+        active
+          ? 'bg-blue-600 text-white border-blue-600'
+          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+      }`}
+    >
+      {label}
+      {typeof count === 'number' && (
+        <span
+          className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs ${
+            active ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'
+          }`}
+        >
+          {count}
+        </span>
+      )}
+    </Link>
+  );
+}
 
 export default async function ModerationPage({
   searchParams,
@@ -24,14 +50,18 @@ export default async function ModerationPage({
   const statusFilter = STATUSES.includes(statusRaw as NewsStatus) ? (statusRaw as NewsStatus) : 'queued';
 
   let news: NewsItem[];
+  // Counts для чипов: fail-safe.
+  let counts: NewsStats | null = null;
   try {
     news = await fetchFromBackend<NewsItem[]>(
       `/news?${new URLSearchParams({ limit: String(PAGE_SIZE), skip: '0', status: statusFilter })}`,
     );
+    counts = await fetchFromBackend<NewsStats>('/news/stats').catch(() => null);
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Failed to load moderation queue';
     return (
       <div>
+        <TopNav active="moderation" />
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Moderation</h2>
         <ErrorState message={msg} />
       </div>
@@ -40,28 +70,22 @@ export default async function ModerationPage({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <TopNav active="moderation" />
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-gray-900">Moderation</h2>
-        {/* GET-форма фильтра: работает без JS. */}
-        <form method="get" action="/moderation" className="flex items-center gap-2">
-          <label htmlFor="status" className="text-sm text-gray-500">Status</label>
-          <select
-            id="status"
-            name="status"
-            defaultValue={statusFilter}
-            className="rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-          >
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>{s.toUpperCase()}</option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            className="rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200"
-          >
-            Apply
-          </button>
-        </form>
+      </div>
+
+      {/* Status chips с counts (fail-safe). */}
+      <div className="flex flex-wrap items-center gap-2 mb-6">
+        {STATUSES.map((s) => (
+          <Chip
+            key={s}
+            href={`/moderation?status=${s}`}
+            active={statusFilter === s}
+            label={s.toUpperCase()}
+            count={counts ? counts[s as keyof NewsStats] : undefined}
+          />
+        ))}
       </div>
 
       {news.length === 0 ? (
@@ -99,23 +123,32 @@ export default async function ModerationPage({
                               Approve
                             </button>
                           </form>
-                          <form
-                            method="post"
-                            action={`/api/admin/moderation/reject/${item.id}`}
-                            className="flex items-center gap-2"
-                          >
-                            <input type="hidden" name="next" value={`/moderation?status=${statusFilter}`} />
-                            <input
-                              type="text"
-                              name="reason"
-                              required
-                              placeholder="Reject reason"
-                              className="rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none w-40"
-                            />
-                            <button type="submit" className="text-red-600 hover:text-red-800">
+                          {/* Reject свёрнут в details: нативно, без JS, не загромождает таблицу. */}
+                          <details className="relative">
+                            <summary className="list-none cursor-pointer text-red-600 hover:text-red-800 select-none">
                               Reject
-                            </button>
-                          </form>
+                            </summary>
+                            <form
+                              method="post"
+                              action={`/api/admin/moderation/reject/${item.id}`}
+                              className="absolute right-0 z-10 mt-2 w-64 bg-white border border-gray-200 rounded-md shadow-lg p-3 space-y-2"
+                            >
+                              <input type="hidden" name="next" value={`/moderation?status=${statusFilter}`} />
+                              <input
+                                type="text"
+                                name="reason"
+                                required
+                                placeholder="Reject reason"
+                                className="w-full rounded-md border border-gray-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+                              />
+                              <button
+                                type="submit"
+                                className="w-full rounded-md bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700"
+                              >
+                                Confirm reject
+                              </button>
+                            </form>
+                          </details>
                         </div>
                       )}
                       {formatImportance(item.importance)}

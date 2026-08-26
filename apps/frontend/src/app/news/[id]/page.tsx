@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { fetchFromBackend } from '@/lib/server/backend-client';
 import StatusBadge from '@/components/StatusBadge';
 import ErrorState from '@/components/ErrorState';
+import TopNav from '@/components/TopNav';
 import { NewsItem, NewsStatus } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -27,7 +28,8 @@ export default async function NewsDetailPage({
     const msg = e instanceof Error ? e.message : 'Failed to load news';
     return (
       <div>
-        <Link href="/news" className="text-blue-600 hover:text-blue-800 text-sm">
+        <TopNav active="news" />
+        <Link href="/news" className="text-blue-600 hover:text-blue-800 text-sm mt-4 inline-block">
           &larr; Back to news list
         </Link>
         <div className="mt-4">
@@ -56,7 +58,8 @@ export default async function NewsDetailPage({
 
   return (
     <div>
-      <Link href="/news" className="text-blue-600 hover:text-blue-800 text-sm">
+      <TopNav active="news" />
+      <Link href="/news" className="text-blue-600 hover:text-blue-800 text-sm mt-4 inline-block">
         &larr; Back to news list
       </Link>
 

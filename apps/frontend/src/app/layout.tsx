@@ -6,8 +6,6 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 // Импорт инициализации Sentry для клиента
 import { initSentryClient } from '../lib/sentry/sentry.client'
-// Импорт навигации
-import TopNav from '../components/TopNav'
 
 // Инициализация Sentry на клиенте
 if (typeof window !== 'undefined') {
@@ -34,9 +32,7 @@ export default function RootLayout({
     <html lang="en">
       {/* Тело страницы с примененным шрифтом */}
       <body className={`${inter.className} min-h-screen bg-gray-50`}>
-        {/* Навигация */}
-        <TopNav />
-        {/* Отображение дочерних компонентов */}
+        {/* TopNav рендерится каждой страницей с пропом active */}
         <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           {children}
         </main>

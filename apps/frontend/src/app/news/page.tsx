@@ -5,13 +5,39 @@ import { fetchFromBackend } from '@/lib/server/backend-client';
 import StatusBadge from '@/components/StatusBadge';
 import ErrorState from '@/components/ErrorState';
 import EmptyState from '@/components/EmptyState';
-import { NewsItem, NewsStatus } from '@/lib/types';
+import TopNav from '@/components/TopNav';
+import { NewsItem, NewsStatus, NewsStats } from '@/lib/types';
 import { formatDate, formatImportance, sourceLabel } from '@/lib/news-labels';
 
 export const dynamic = 'force-dynamic';
 
 const PAGE_SIZE = 100;
 const STATUSES: NewsStatus[] = ['raw', 'processed', 'translated', 'queued', 'approved', 'published', 'rejected'];
+
+/** Кликабельный чип фильтра статуса с count (если известен). */
+function Chip({ href, active, label, count }: { href: string; active: boolean; label: string; count?: number }) {
+  return (
+    <Link
+      href={href}
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border ${
+        active
+          ? 'bg-blue-600 text-white border-blue-600'
+          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+      }`}
+    >
+      {label}
+      {typeof count === 'number' && (
+        <span
+          className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs ${
+            active ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'
+          }`}
+        >
+          {count}
+        </span>
+      )}
+    </Link>
+  );
+}
 
 /** Человекочитаемый текст banner-параметров publish-действий. */
 function publishBanner(params: Record<string, string | string[] | undefined>): { kind: 'ok' | 'err'; text: string } | null {
@@ -39,10 +65,13 @@ export default async function NewsListPage({
   const banner = publishBanner(params);
 
   let news: NewsItem[];
+  // Counts для чипов: fail-safe — без stats чипы остаются простыми ссылками.
+  let counts: NewsStats | null = null;
   try {
     const qs = new URLSearchParams({ limit: String(PAGE_SIZE), skip: '0' });
     if (statusFilter) qs.set('status', statusFilter);
     news = await fetchFromBackend<NewsItem[]>(`/news?${qs.toString()}`);
+    counts = await fetchFromBackend<NewsStats>('/news/stats').catch(() => null);
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Failed to load news';
     return (
@@ -55,29 +84,9 @@ export default async function NewsListPage({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <TopNav active="news" />
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-gray-900">News</h2>
-        {/* GET-форма фильтра: работает без JS. */}
-        <form method="get" action="/news" className="flex items-center gap-2">
-          <label htmlFor="status" className="text-sm text-gray-500">Status</label>
-          <select
-            id="status"
-            name="status"
-            defaultValue={statusFilter}
-            className="rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-          >
-            <option value="">All statuses</option>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>{s.toUpperCase()}</option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            className="rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200"
-          >
-            Apply
-          </button>
-        </form>
       </div>
 
       {banner && (
@@ -90,6 +99,20 @@ export default async function NewsListPage({
           {banner.text}
         </div>
       )}
+
+      {/* Status chips с counts (Sprint 16). Counts fail-safe: без stats — просто ссылки. */}
+      <div className="flex flex-wrap items-center gap-2 mb-6">
+        <Chip href="/news" active={statusFilter === ''} label="All" count={counts?.total} />
+        {STATUSES.map((s) => (
+          <Chip
+            key={s}
+            href={`/news?status=${s}`}
+            active={statusFilter === s}
+            label={s.toUpperCase()}
+            count={counts ? counts[s as keyof NewsStats] : undefined}
+          />
+        ))}
+      </div>
 
       {news.length === 0 ? (
         <EmptyState message="No news found." />

@@ -4,6 +4,8 @@
 import { fetchFromBackend } from '@/lib/server/backend-client';
 import StatCard from '@/components/StatCard';
 import ErrorState from '@/components/ErrorState';
+import TopNav from '@/components/TopNav';
+import Link from 'next/link';
 import { NewsStats, HealthStatus } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -48,6 +50,7 @@ export default async function Dashboard({
 
   return (
     <div>
+      <TopNav active="dashboard" />
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
         <div className="flex items-center gap-4">
@@ -90,15 +93,35 @@ export default async function Dashboard({
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total" value={stats.total} accent="bg-blue-500" />
-        <StatCard label="RAW" value={stats.raw} accent="bg-gray-500" />
+      {/* Primary action cards: что требует внимания оператора. */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        <StatCard
+          label="Awaiting moderation"
+          value={stats.queued}
+          accent={stats.queued > 0 ? 'bg-yellow-500' : 'bg-gray-400'}
+          href="/moderation"
+        />
+        <StatCard label="Ready to publish" value={stats.approved} accent="bg-indigo-500" href="/news?status=approved" />
+        <StatCard label="Published" value={stats.published} accent="bg-green-500" href="/news?status=published" />
+        <StatCard label="Rejected" value={stats.rejected} accent="bg-red-500" href="/news?status=rejected" />
+      </div>
+
+      {/* Secondary pipeline stats. */}
+      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Pipeline</h3>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-5 mb-8">
+        <StatCard label="RAW" value={stats.raw} accent="bg-gray-400" />
         <StatCard label="PROCESSED" value={stats.processed} accent="bg-blue-400" />
         <StatCard label="TRANSLATED" value={stats.translated} accent="bg-cyan-500" />
-        <StatCard label="QUEUED" value={stats.queued} accent="bg-yellow-500" />
-        <StatCard label="APPROVED" value={stats.approved} accent="bg-indigo-500" />
-        <StatCard label="PUBLISHED" value={stats.published} accent="bg-green-500" />
-        <StatCard label="REJECTED" value={stats.rejected} accent="bg-red-500" />
+        <StatCard label="Total" value={stats.total} accent="bg-blue-500" />
+        <div className="bg-white shadow rounded-lg px-4 py-5 flex items-center">
+          <p className="text-xs text-gray-500">
+            Queued items wait in{' '}
+            <Link href="/moderation" className="text-blue-600 hover:text-blue-800 font-medium">
+              Moderation queue
+            </Link>
+            .
+          </p>
+        </div>
       </div>
     </div>
   );

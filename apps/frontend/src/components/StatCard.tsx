@@ -1,12 +1,16 @@
+import Link from 'next/link';
+
 interface StatCardProps {
   label: string;
   value: number | string;
   accent?: string;
+  /** Если задан — карточка становится ссылкой (для actionable статусов). */
+  href?: string;
 }
 
-export default function StatCard({ label, value, accent = 'bg-blue-500' }: StatCardProps) {
-  return (
-    <div className="bg-white overflow-hidden shadow rounded-lg">
+export default function StatCard({ label, value, accent = 'bg-blue-500', href }: StatCardProps) {
+  const body = (
+    <div className="bg-white overflow-hidden shadow rounded-lg h-full">
       <div className="px-4 py-5 sm:p-6">
         <div className="flex items-center">
           <div className={`flex-shrink-0 ${accent} rounded-md p-3`}>
@@ -26,4 +30,13 @@ export default function StatCard({ label, value, accent = 'bg-blue-500' }: StatC
       </div>
     </div>
   );
+
+  if (href) {
+    return (
+      <Link href={href} className="block hover:shadow-md transition-shadow">
+        {body}
+      </Link>
+    );
+  }
+  return body;
 }
