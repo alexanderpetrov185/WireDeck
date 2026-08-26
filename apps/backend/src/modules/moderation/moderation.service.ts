@@ -58,6 +58,13 @@ export class ModerationService {
     } else {
       this.autoImportanceMin = parsedMin;
     }
+
+    // Sprint 14 hotfix: явный лог resolved-политики на bootstrap,
+    // чтобы сразу видеть, какой режим реально работает в контейнере.
+    this.logger.log(
+      `Moderation policy resolved: mode=${this.mode}, autoImportanceMin=${this.autoImportanceMin}`,
+      this.context,
+    );
   }
 
   /**
@@ -177,7 +184,7 @@ export class ModerationService {
 
     if (this.mode === 'manual') {
       this.logger.log(
-        `Moderation mode is manual: ${queuedNews.length} item(s) awaiting review in admin panel`,
+        `Moderation step: mode=manual, left awaiting review: ${queuedNews.length}`,
         this.context,
       );
       return { processed: 0, skipped: queuedNews.length, errors: 0 };
