@@ -29,17 +29,18 @@ export class RssCollector implements NewsCollector {
    */
   async collect(since?: Date): Promise<CollectedNews[]> {
     const feedsConfig = this.configService.get<string>('RSS_FEEDS', '');
-    const feedUrls = feedsConfig
-      .split(',')
-      .map((url) => url.trim())
-      .filter((url) => url.length > 0);
+    const { urls: feedUrls, skipped } = this.parseFeedUrls(feedsConfig);
 
     if (feedUrls.length === 0) {
       this.logger.warn('No RSS feeds configured. Check RSS_FEEDS environment variable.', this.context);
       return [];
     }
 
-    this.logger.log(`Starting collection from ${feedUrls.length} RSS feeds`, this.context);
+    if (skipped > 0) {
+      this.logger.warn(`Skipped ${skipped} invalid or duplicate RSS feed entr(ies)`, this.context);
+    }
+
+    this.logger.log(`Starting collection from ${feedUrls.length} valid RSS feeds`, this.context);
 
     // Используем Promise.allSettled, чтобы ошибка в одном фиде не прерывала сбор других.
     const results = await Promise.allSettled(
@@ -58,6 +59,39 @@ export class RssCollector implements NewsCollector {
 
     this.logger.log(`Total collected and filtered RSS news: ${allNews.length}`, this.context);
     return allNews;
+  }
+
+  /**
+   * Парсинг и валидация списка фидов из env (Sprint 17).
+   * - только http(s) URL;
+   * - дедуп повторов;
+   * - мусорные элементы отбрасываются с warn, не валят сбор.
+   */
+  private parseFeedUrls(config: string): { urls: string[]; skipped: number } {
+    const seen = new Set<string>();
+    const urls: string[] = [];
+    let skipped = 0;
+
+    for (const raw of config.split(',')) {
+      const url = raw.trim();
+      if (url.length === 0) {
+        continue;
+      }
+      if (!/^https?:\/\//i.test(url)) {
+        this.logger.warn(`Skipping invalid RSS feed URL: "${url}"`, this.context);
+        skipped += 1;
+        continue;
+      }
+      if (seen.has(url)) {
+        this.logger.warn(`Skipping duplicate RSS feed URL: "${url}"`, this.context);
+        skipped += 1;
+        continue;
+      }
+      seen.add(url);
+      urls.push(url);
+    }
+
+    return { urls, skipped };
   }
 
   /**

@@ -56,3 +56,27 @@ npm run docker:up       # docker compose -f compose.yaml up -d
 npm run docker:down     # docker compose -f compose.yaml down
 npm run docker:build    # docker compose -f compose.yaml build
 ```
+
+## Контентные источники (RSS)
+
+Входной поток новостей задаётся только через env `RSS_FEEDS` (стандартные URL RSS 2.0/Atom, через запятую). Код не содержит хардкод-списков.
+
+**Pragmatic default pack** (business / markets, EN) — в `.env.example`:
+- Reuters Agency — Business
+- CNBC — Top News
+- CNBC — Markets
+- MarketWatch — Top Stories
+- Yahoo Finance — News
+- Investing.com — Economy News
+- CoinDesk — Crypto News
+- BBC — Business
+
+**Как добавить свои фиды:**
+```bash
+RSS_FEEDS="https://example.com/feed.xml, https://other.com/rss"
+```
+- Коллектор отбрасывает невалидные (`не http(s)`) и дубликаты URL с warn-логом; один упавший фид не прерывает сбор остальных.
+- Если URL содержит `&` — оборачивайте значение `RSS_FEEDS` в кавычки (в shell/compose).
+- Дедупликация новостей между фидами выполняется уже на уровне ingestion (по `hash`), поэтому пересечения в разных фидах не порождают дублей.
+
+**Optional premium/аналитика** (часто 403/empty или paywall) — включать по необходимости: WSJ, FT, Bloomberg, Seeking Alpha.

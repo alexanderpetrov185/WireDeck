@@ -140,6 +140,52 @@ describe('RssCollector', () => {
     expect(result).toEqual([]);
     expect(loggerService.warn).toHaveBeenCalledWith(expect.stringContaining('No RSS feeds configured'), expect.any(String));
   });
+it('should skip invalid (non-http) URLs with a warn and still collect valid ones', async () => {
+    const mockFeed = {
+      title: 'Test Feed',
+      items: [{ title: 'News 1', link: 'https://test.com/1', guid: 'guid-1', isoDate: '2026-08-11T10:00:00Z', content: 'C' }],
+    };
+    mockParseURL.mockResolvedValue(mockFeed);
+
+    jest.spyOn(configService, 'get').mockReturnValue('https://test.com/feed.xml, not-a-url, , ftp://bad');
+
+    const result = await collector.collect();
+
+    expect(result).toHaveLength(1);
+    expect(mockParseURL).toHaveBeenCalledTimes(1);
+    expect(mockParseURL).toHaveBeenCalledWith('https://test.com/feed.xml');
+    expect(loggerService.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Skipping invalid RSS feed URL'),
+      expect.any(String),
+    );
+  });
+
+  it('should deduplicate identical feed URLs (fetch once)', async () => {
+    const mockFeed = {
+      title: 'Test Feed',
+      items: [{ title: 'N', link: 'https://test.com/n', guid: 'g', isoDate: '2026-08-11T10:00:00Z', content: 'C' }],
+    };
+    mockParseURL.mockImplementation((url: string) =>
+      url === 'https://test.com/other.xml'
+        ? Promise.resolve({ ...mockFeed, title: 'Other Feed' })
+        : Promise.resolve(mockFeed),
+    );
+
+    jest.spyOn(configService, 'get').mockReturnValue(
+      'https://test.com/feed.xml, https://test.com/feed.xml , https://test.com/other.xml',
+    );
+
+    const result = await collector.collect();
+
+    expect(result).toHaveLength(2); // каждый фид учтён один раз
+    expect(mockParseURL).toHaveBeenCalledTimes(2);
+    expect(mockParseURL).toHaveBeenCalledWith('https://test.com/feed.xml');
+    expect(mockParseURL).toHaveBeenCalledWith('https://test.com/other.xml');
+    expect(loggerService.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Skipping duplicate RSS feed URL'),
+      expect.any(String),
+    );
+  });
 
   it('should perform defensive mapping of rawText', async () => {
     const mockFeed = {
