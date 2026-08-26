@@ -1,5 +1,5 @@
 // News detail - Server Component (fix admin loading):
-// данные рендерятся на сервере; approve/reject - нативные HTML-формы.
+// данные рендерятся на сервере; approve/reject/publish - нативные HTML-формы.
 import Link from 'next/link';
 import { fetchFromBackend } from '@/lib/server/backend-client';
 import StatusBadge from '@/components/StatusBadge';
@@ -12,10 +12,13 @@ const ACTIONABLE: NewsStatus[] = ['queued', 'processed', 'translated'];
 
 export default async function NewsDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  const query = await searchParams;
 
   let news: NewsItem;
   try {
@@ -36,6 +39,21 @@ export default async function NewsDetailPage({
 
   const actionable = ACTIONABLE.includes(news.status);
 
+  // Banner после publish-действия.
+  let banner: { kind: 'ok' | 'err'; text: string } | null = null;
+  if (query.published === '1') {
+    banner = {
+      kind: news.telegramMessageId ? 'ok' : 'err',
+      text: news.telegramMessageId
+        ? `Published to Telegram (message ID: ${news.telegramMessageId}).`
+        : 'Publish accepted, but Telegram message ID is not saved yet.',
+    };
+  } else if (query.already_published === '1') {
+    banner = { kind: 'ok', text: 'Already published earlier — skipped (no duplicate sent).' };
+  } else if (query.publish_error === '1') {
+    banner = { kind: 'err', text: 'Publish failed. News must be APPROVED and Telegram must be reachable.' };
+  }
+
   return (
     <div>
       <Link href="/news" className="text-blue-600 hover:text-blue-800 text-sm">
@@ -46,6 +64,17 @@ export default async function NewsDetailPage({
         <h2 className="text-2xl font-bold text-gray-900">{news.title || 'Untitled'}</h2>
         <StatusBadge status={news.status} />
       </div>
+
+      {banner && (
+        <div
+          role="status"
+          className={`mb-6 rounded-md p-4 text-sm ${
+            banner.kind === 'ok' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+          }`}
+        >
+          {banner.text}
+        </div>
+      )}
 
       {actionable && (
         <div className="mb-6 bg-white shadow rounded-lg p-4 flex items-center gap-6">
@@ -61,6 +90,21 @@ export default async function NewsDetailPage({
             <input type="text" name="reason" required placeholder="Rejection reason" className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none w-64" />
             <button type="submit" className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700">
               Reject
+            </button>
+          </form>
+        </div>
+      )}
+
+      {news.status === 'approved' && (
+        <div className="mb-6 bg-white shadow rounded-lg p-4">
+          {/* Нативная форма publish: работает без клиентского JS. */}
+          <form method="post" action={`/api/admin/publishing/publish/${news.id}`}>
+            <input type="hidden" name="next" value={`/news/${news.id}`} />
+            <button
+              type="submit"
+              className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700"
+            >
+              Publish now
             </button>
           </form>
         </div>

@@ -13,6 +13,20 @@ export const dynamic = 'force-dynamic';
 const PAGE_SIZE = 100;
 const STATUSES: NewsStatus[] = ['raw', 'processed', 'translated', 'queued', 'approved', 'published', 'rejected'];
 
+/** Человекочитаемый текст banner-параметров publish-действий. */
+function publishBanner(params: Record<string, string | string[] | undefined>): { kind: 'ok' | 'err'; text: string } | null {
+  if (params.published === '1') {
+    return { kind: 'ok', text: 'Published to Telegram.' };
+  }
+  if (params.already_published === '1') {
+    return { kind: 'ok', text: 'Already published earlier — skipped (no duplicate sent).' };
+  }
+  if (params.publish_error === '1') {
+    return { kind: 'err', text: 'Publish failed. News must be APPROVED and Telegram must be reachable.' };
+  }
+  return null;
+}
+
 export default async function NewsListPage({
   searchParams,
 }: {
@@ -21,6 +35,8 @@ export default async function NewsListPage({
   const params = await searchParams;
   const statusRaw = typeof params.status === 'string' ? params.status : '';
   const statusFilter = STATUSES.includes(statusRaw as NewsStatus) ? (statusRaw as NewsStatus) : '';
+
+  const banner = publishBanner(params);
 
   let news: NewsItem[];
   try {
@@ -64,6 +80,17 @@ export default async function NewsListPage({
         </form>
       </div>
 
+      {banner && (
+        <div
+          role="status"
+          className={`mb-4 rounded-md p-4 text-sm ${
+            banner.kind === 'ok' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+          }`}
+        >
+          {banner.text}
+        </div>
+      )}
+
       {news.length === 0 ? (
         <EmptyState message="No news found." />
       ) : (
@@ -81,6 +108,7 @@ export default async function NewsListPage({
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lang</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Telegram ID</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -98,6 +126,17 @@ export default async function NewsListPage({
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.sourceLanguage}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(item.createdAt)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.telegramMessageId || '—'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        {item.status === 'approved' && (
+                          <form method="post" action={`/api/admin/publishing/publish/${item.id}`} className="inline">
+                            <input type="hidden" name="next" value={`/news?status=approved`} />
+                            <button type="submit" className="text-green-600 hover:text-green-800">
+                              Publish
+                            </button>
+                          </form>
+                        )}
+                        {item.status !== 'approved' && <span className="text-gray-300">—</span>}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

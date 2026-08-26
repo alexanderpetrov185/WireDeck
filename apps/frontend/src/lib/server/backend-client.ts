@@ -106,6 +106,49 @@ export function seeOther(path: string): NextResponse {
 }
 
 /**
+ * Как proxyBackend, но возвращает статус и разобранное тело —
+ * нужно, когда результат выражен в body ({processed,skipped,errors}),
+ * а не в HTTP-статусе (например publishing endpoints всегда 200).
+ */
+export async function proxyBackendParsed(
+  path: string,
+  init?: RequestInit,
+): Promise<{ status: number; body: Record<string, unknown> | null }> {
+  const token = process.env.INGESTION_TOKEN;
+  if (!token) {
+    return { status: 500, body: { error: 'admin_configuration_error' } };
+  }
+  try {
+    const response = await fetch(`${getBackendBaseUrl()}${path}`, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-ingestion-token': token,
+        ...(init?.headers ?? {}),
+      },
+      cache: 'no-store',
+    });
+    let body: unknown = null;
+    try {
+      body = await response.json();
+    } catch {
+      body = null;
+    }
+    return { status: response.status, body: body as Record<string, unknown> | null };
+  } catch {
+    return { status: 502, body: { error: 'backend_unavailable' } };
+  }
+}
+
+/**
+ * Добавляет query-параметр к внутреннему пути (для redirect-баннеров).
+ */
+export function withQueryParam(path: string, key: string, value: string): string {
+  const sep = path.includes('?') ? '&' : '?';
+  return `${path}${sep}${key}=${encodeURIComponent(value)}`;
+}
+
+/**
  * Safe next path: только внутренние пути, начинающиеся с '/',
  * без protocol-relative ('//') — защита от open redirect.
  */

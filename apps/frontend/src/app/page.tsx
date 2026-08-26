@@ -8,7 +8,24 @@ import { NewsStats, HealthStatus } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-export default async function Dashboard() {
+/** Баннеры publish-pending из query (?published=N&failed=M). */
+function pendingBanner(params: Record<string, string | string[] | undefined>) {
+  if (params.published === undefined) return null;
+  const published = Number(params.published ?? 0);
+  const failed = Number(params.failed ?? 0);
+  if (failed > 0) {
+    return { kind: 'err' as const, text: `Publish pending finished: published ${published}, failed ${failed}.` };
+  }
+  return { kind: 'ok' as const, text: `Publish pending finished: published ${published}.` };
+}
+
+export default async function Dashboard({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const banner = pendingBanner(params);
   let stats: NewsStats;
   let health: HealthStatus | null = null;
 
@@ -40,7 +57,16 @@ export default async function Dashboard() {
               {backendStatus}
             </span>
           </span>
-          {/* Нативная форма: работает даже без клиентского JS. */}
+          {/* Нативные формы: работают даже без клиентского JS. */}
+          <form method="post" action="/api/admin/publishing/publish-pending">
+            <input type="hidden" name="next" value="/" />
+            <button
+              type="submit"
+              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+            >
+              Publish pending
+            </button>
+          </form>
           <form method="post" action="/api/admin/pipeline/trigger">
             <input type="hidden" name="next" value="/" />
             <button
@@ -52,6 +78,17 @@ export default async function Dashboard() {
           </form>
         </div>
       </div>
+
+      {banner && (
+        <div
+          role="status"
+          className={`mb-4 rounded-md p-4 text-sm ${
+            banner.kind === 'ok' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+          }`}
+        >
+          {banner.text}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total" value={stats.total} accent="bg-blue-500" />
