@@ -79,4 +79,57 @@ RSS_FEEDS="https://example.com/feed.xml, https://other.com/rss"
 - Если URL содержит `&` — оборачивайте значение `RSS_FEEDS` в кавычки (в shell/compose).
 - Дедупликация новостей между фидами выполняется уже на уровне ingestion (по `hash`), поэтому пересечения в разных фидах не порождают дублей.
 
+## Режим ежедневной работы (runbook)
+
+Спринт 18: операционные дефолты для автономной работы без ручного trigger.
+
+### 1. Как включить scheduler
+
+По умолчанию `SCHEDULER_ENABLED=false` (безопасно — pipeline не стартует сам). Чтобы включить ежедневные автоматические запуски:
+
+```bash
+# в .env раскомментируйте recommended daily-operation block
+SCHEDULER_ENABLED=true
+PIPELINE_INTERVAL_MS=3600000   # 1 час
+PIPELINE_BATCH_LIMIT=10
+MODERATION_MODE=hybrid
+MODERATION_AUTO_IMPORTANCE_MIN=0.6
+
+docker compose up -d            # пересоздаст backend с новым env
+```
+
+Проверить, что scheduler реально включён:
+```bash
+docker compose logs -f backend | grep Scheduler
+# → "Scheduler enabled, interval: 3600000ms"
+# → "Pipeline job enqueued" (на каждом тике)
+```
+
+### 2. Что делает каждый тик
+
+Полный pipeline: `RSS collection → Ingestion+dedup → AI processing → Translation → Moderation (по MODERATION_MODE) → Publishing → Telegram`.
+
+### 3. Дедупликация jobId (нет параллельных прогонов)
+
+Каждый тик посылает BullMQ job с фиксированным `jobId`. Если предыдущий прогон ещё выполняется (active/waiting/delayed) — новый тик пропускается:
+```
+→ "Pipeline job already active. Skipping duplicate enqueue."
+```
+Параллельные прогоны и двойные публикации исключены. Ручной «Run Pipeline» из админки использует тот же jobId и тоже дедуплицируется.
+
+### 4. Режимы модерации и риск «тишины»
+
+| MODERATION_MODE | Поведение публикации | Риск |
+|---|---|---|
+| `auto` | всё QUEUED публикуется само | канал полон, могут быть маловажные посты |
+| `hybrid` (реком.) | важные (`importance≥0.6`) сами, остальное — на ручную модерацию | непросмотренная очередь = пропущенные посты |
+| `manual` | ничего не публикуется без оператора | **если оператор не заходит — канал молчит** |
+
+В `manual`/`hybrid` неопубликованное висит в `/moderation` (badge в шапке). Если канал «молчит», проверьте в порядке: `SCHEDULER_ENABLED`, `MODERATION_MODE`, и не пустая ли очередь модерации.
+
+### 5. Операционка
+
+- **Логи:** `docker compose logs -f backend` (RssCollector / IngestionService / ModerationService / PublishingService — каждый пишет свой контекст и итоги прогона).
+- **Ручной trigger:** админка → Dashboard → **Run Pipeline** (или `curl -X POST -H 'x-ingestion-token: …' localhost:3000/pipeline/trigger`).
+- **Publish from admin:** `/moderation` → Approve (или напрямую `/news?status=approved` → **Publish**); на Dashboard есть кнопка **Publish pending** для всей очереди APPROVED.
 **Optional premium/аналитика** (часто 403/empty или paywall) — включать по необходимости: WSJ, FT, Bloomberg, Seeking Alpha.

@@ -68,7 +68,10 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit(): void {
     if (!this.enabled) {
-      this.logger.log('Scheduler disabled (SCHEDULER_ENABLED != true). No jobs will be auto-created.', this.context);
+      this.logger.log(
+        `Scheduler disabled (SCHEDULER_ENABLED != true). No jobs will be auto-created. Configured interval would be ${this.intervalMs}ms.`,
+        this.context,
+      );
       return;
     }
 
