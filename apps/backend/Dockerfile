@@ -33,6 +33,10 @@ COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/package.json ./
 
+# Sprint 19: копируем example в стандартный путь для default-активации.
+# Оператор переопределяет реальными списками через volume-mount в compose.
+COPY compliance.lists.example.json ./compliance.lists.json
+
 # Создаем директорию для логов
 RUN mkdir -p /app/logs
 

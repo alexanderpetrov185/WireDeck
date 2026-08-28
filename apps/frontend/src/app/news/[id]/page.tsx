@@ -68,6 +68,24 @@ export default async function NewsDetailPage({
         <StatusBadge status={news.status} />
       </div>
 
+      {/* Sprint 19: compliance badges */}
+      {news.complianceLabels && (
+        <div className="mb-6 rounded-md bg-orange-50 border border-orange-200 p-4">
+          <p className="text-sm font-medium text-orange-800 mb-2">Compliance labels:</p>
+          <div className="flex flex-wrap gap-2">
+            {news.complianceLabels.split(',').filter(Boolean).map((label) => (
+              <span
+                key={label}
+                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800"
+              >
+                {label}
+                {label === 'terror_extremist' && ' (autopublish blocked)'}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {banner && (
         <div
           role="status"

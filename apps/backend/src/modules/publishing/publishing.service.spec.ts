@@ -5,11 +5,13 @@ import { Publisher } from './providers/publisher.interface';
 import { PUBLISHER_TOKEN } from './providers/publisher.token';
 import { LoggerService } from '../../common/logger/logger.service';
 import { NewsStatus } from '../news/entities/news.entity';
+import { ComplianceService } from '../compliance/compliance.service';
 
 describe('PublishingService', () => {
   let service: PublishingService;
   let newsService: NewsService;
   let publisher: Publisher;
+  let complianceService: { scan: jest.Mock };
 
   const mockNews = (overrides: Partial<any> = {}) => ({
     id: 'uuid-1',
@@ -68,12 +70,18 @@ describe('PublishingService', () => {
             debug: jest.fn(),
           },
         },
+        {
+          // По умолчанию compliance выключен (scan → clean).
+          provide: ComplianceService,
+          useValue: { scan: jest.fn().mockReturnValue({ labels: [], footnotes: [], blocked: false, matches: [] }) },
+        },
       ],
     }).compile();
 
     service = module.get<PublishingService>(PublishingService);
     newsService = module.get<NewsService>(NewsService);
     publisher = module.get(PUBLISHER_TOKEN);
+    complianceService = module.get(ComplianceService);
   });
 
   it('should be defined', () => {
@@ -111,6 +119,64 @@ describe('PublishingService', () => {
       const sent = (publisher.publish as jest.Mock).mock.calls[0][0] as string;
       expect(sent.length).toBeLessThanOrEqual(3900);
       expect(sent).toContain('Source: Test Feed — https://test.com/1');
+    });
+
+    it('should block autopublish on compliance block match (Sprint 19)', async () => {
+      const news = mockNews({ status: NewsStatus.APPROVED });
+      (newsService.claimForPublishing as jest.Mock).mockResolvedValue(true);
+      (newsService.findById as jest.Mock).mockResolvedValue(news);
+      (complianceService.scan as jest.Mock).mockReturnValue({
+        labels: ['terror_extremist'],
+        footnotes: [],
+        blocked: true,
+        matches: [{ category: 'terror_extremist', action: 'block', term: 'Example Extremist Org' }],
+      });
+
+      const result = await service.publishOne('uuid-1');
+
+      // Не публикуем, claim откатываем, labels сохранены.
+      expect(result).toEqual({ processed: 0, skipped: 0, errors: 1 });
+      expect(publisher.publish).not.toHaveBeenCalled();
+      expect(newsService.revertPublishingClaim).toHaveBeenCalledWith('uuid-1');
+      expect(newsService.update).toHaveBeenCalledWith('uuid-1', { complianceLabels: 'terror_extremist' });
+      expect(newsService.markPublished).not.toHaveBeenCalled();
+    });
+
+    it('should append compliance footnote and persist label on label match (Sprint 19)', async () => {
+      const news = mockNews({ status: NewsStatus.APPROVED });
+      (newsService.claimForPublishing as jest.Mock).mockResolvedValue(true);
+      (newsService.findById as jest.Mock).mockResolvedValue(news);
+      (publisher.publish as jest.Mock).mockResolvedValue('123456');
+      (newsService.markPublished as jest.Mock).mockResolvedValue(true);
+      (complianceService.scan as jest.Mock).mockReturnValue({
+        labels: ['foreign_agent'],
+        footnotes: ['FA footnote text.'],
+        blocked: false,
+        matches: [{ category: 'foreign_agent', action: 'label', term: 'Example Foreign Agent Name' }],
+      });
+
+      const result = await service.publishOne('uuid-1');
+
+      expect(result).toEqual({ processed: 1, skipped: 0, errors: 0 });
+      // Labels сохранены ДО отправки.
+      expect(newsService.update).toHaveBeenCalledWith('uuid-1', { complianceLabels: 'foreign_agent' });
+      // Сноска в конце поста.
+      const sent = (publisher.publish as jest.Mock).mock.calls[0][0] as string;
+      expect(sent.endsWith('FA footnote text.')).toBe(true);
+      expect(sent).toContain('\n\nFA footnote text.');
+      expect(newsService.markPublished).toHaveBeenCalledWith('uuid-1', '123456');
+    });
+
+    it('should not persist labels when scan is clean (Sprint 19)', async () => {
+      const news = mockNews({ status: NewsStatus.APPROVED });
+      (newsService.claimForPublishing as jest.Mock).mockResolvedValue(true);
+      (newsService.findById as jest.Mock).mockResolvedValue(news);
+      (publisher.publish as jest.Mock).mockResolvedValue('123456');
+      (newsService.markPublished as jest.Mock).mockResolvedValue(true);
+
+      await service.publishOne('uuid-1');
+
+      expect(newsService.update).not.toHaveBeenCalled();
     });
 
     it('should skip already PUBLISHED news (idempotency)', async () => {

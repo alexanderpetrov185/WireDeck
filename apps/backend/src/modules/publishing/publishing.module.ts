@@ -6,6 +6,7 @@ import { PublishingStuckSweeperService } from './publishing-stuck-sweeper.servic
 import { TelegramPublisherProvider } from './providers/telegram-publisher.provider';
 import { PUBLISHER_TOKEN } from './providers/publisher.token';
 import { NewsModule } from '../news/news.module';
+import { ComplianceModule } from '../compliance/compliance.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { NewsModule } from '../news/news.module';
       timeout: 15000,
     }),
     NewsModule, // Для доступа к NewsService
+    ComplianceModule, // Sprint 19: compliance scan перед публикацией
   ],
   controllers: [PublishingController],
   providers: [

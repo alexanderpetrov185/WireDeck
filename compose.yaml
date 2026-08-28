@@ -74,6 +74,10 @@ services:
       - TELEGRAM_CHANNEL_ID=${TELEGRAM_CHANNEL_ID}
       - MODERATION_MODE=${MODERATION_MODE:-auto}
       - MODERATION_AUTO_IMPORTANCE_MIN=${MODERATION_AUTO_IMPORTANCE_MIN:-0.6}
+      # Sprint 19: compliance watchlists (путь внутри контейнера).
+      # Стандарт: /app/compliance.lists.json. Файл монтируется volume'ом ниже;
+      # если volume недоступен — в образ попадает example (из Dockerfile).
+      - COMPLIANCE_LISTS_PATH=${COMPLIANCE_LISTS_PATH:-/app/compliance.lists.json}
       - SCHEDULER_ENABLED=${SCHEDULER_ENABLED:-false}
       - PIPELINE_INTERVAL_MS=${PIPELINE_INTERVAL_MS:-600000}
       - PIPELINE_BATCH_LIMIT=${PIPELINE_BATCH_LIMIT:-10}
@@ -83,6 +87,9 @@ services:
       - PUBLISHING_STUCK_SWEEP_INTERVAL_MS=${PUBLISHING_STUCK_SWEEP_INTERVAL_MS:-600000}
       - PUBLISHING_STUCK_THRESHOLD_MS=${PUBLISHING_STUCK_THRESHOLD_MS:-3600000}
     volumes:
+      # Sprint 19: compliance watchlists. Оператор:
+      #   cp compliance.lists.example.json compliance.lists.json  (затем отредактировать)
+      - ./compliance.lists.json:/app/compliance.lists.json:ro
       - backend-logs:/app/logs
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health/live || exit 1"]

@@ -45,6 +45,8 @@ export interface NewsItem {
   moderatedAt: string | null;
   rejectionReason: string | null;
   publishedAt: string | null;
+  // Sprint 19: compliance-маркировка (comma-separated категории, null = clean).
+  complianceLabels: string | null;
   createdAt: string;
   updatedAt: string;
 }

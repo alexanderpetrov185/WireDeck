@@ -91,3 +91,7 @@ apps/frontend/out/
 # Secrets
 secrets/
 config/secrets.json
+
+# Compliance runtime lists (operator-data, may contain real registry entries).
+# Only the fixture example file is tracked: compliance.lists.example.json
+compliance.lists.json

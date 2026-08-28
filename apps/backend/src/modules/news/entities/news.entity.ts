@@ -129,6 +129,11 @@ export class News {
   @Column({ name: 'rejection_reason', type: 'text', nullable: true })
   rejectionReason: string | null;
 
+  // Sprint 19: compliance-маркировка по watchlists (comma-separated категории:
+  // foreign_agent / terror_extremist / undesirable_org). NULL = clean.
+  @Column({ name: 'compliance_labels', type: 'varchar', length: 255, nullable: true })
+  complianceLabels: string | null;
+
   // Время публикации новости в оригинальном источнике
   // (заполняется коллектором при сборе данных)
   @Column({ name: 'published_at', type: 'timestamptz', nullable: true })

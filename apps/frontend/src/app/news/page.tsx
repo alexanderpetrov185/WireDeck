@@ -141,6 +141,14 @@ export default async function NewsListPage({
                         <Link href={`/news/${item.id}`} className="text-blue-600 hover:text-blue-800">
                           {item.title || item.rawText.slice(0, 80) || '—'}
                         </Link>
+                        {item.complianceLabels && (
+                          <span
+                            className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800"
+                            title={`Compliance: ${item.complianceLabels}`}
+                          >
+                            ⚖ {item.complianceLabels.split(',').filter(Boolean).join(', ')}
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{sourceLabel(item.source)}</td>
                       <td className="px-6 py-4 whitespace-nowrap"><StatusBadge status={item.status} /></td>

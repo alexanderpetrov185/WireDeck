@@ -79,10 +79,11 @@ export function buildSourceLine(news: TelegramMessageNews): string {
 
 /**
  * Собирает итоговый текст Telegram-сообщения.
- * Гарантирует длину ≤ MAX_MESSAGE_LENGTH; при переполнении ужимается body,
- * но link и источник сохраняются всегда.
+ * footnotes — обязательные compliance-сноски (Sprint 19), append в конец
+ * с учётом length-budget (не вытесняются truncation'ом).
+ * Гарантирует длину ≤ MAX_MESSAGE_LENGTH.
  */
-export function buildTelegramMessage(news: TelegramMessageNews): string {
+export function buildTelegramMessage(news: TelegramMessageNews, footnotes: string[] = []): string {
   const title = truncateAtWordBoundary(news.title ?? '', MAX_TITLE_LENGTH);
 
   let body = buildMessageBody(news);
@@ -92,6 +93,8 @@ export function buildTelegramMessage(news: TelegramMessageNews): string {
   }
 
   const sourceLine = buildSourceLine(news);
+  // Compliance-сноски: отдельный блок в конце (пустая строка перед блоком).
+  const footnoteBlock = footnotes.length > 0 ? footnotes.join('\n') : '';
 
   const parts: string[] = [];
   if (title) {
@@ -104,13 +107,22 @@ export function buildTelegramMessage(news: TelegramMessageNews): string {
     parts.push(sourceLine);
   }
 
+  // Бюджет базовой части: резервируем место под сноски.
+  const baseBudget = footnoteBlock
+    ? MAX_MESSAGE_LENGTH - footnoteBlock.length - 2 // 2 = '\n\n' разделитель
+    : MAX_MESSAGE_LENGTH;
+
   let message = parts.join('\n\n');
 
-  // Последний предохранитель по общей длине: жмём body, сохраняя source/title.
-  if (message.length > MAX_MESSAGE_LENGTH && body) {
-    const excess = message.length - MAX_MESSAGE_LENGTH;
+  // Последний предохранитель по общей длине: жмём body, сохраняя source/title/footnotes.
+  if (message.length > baseBudget && body) {
+    const excess = message.length - baseBudget;
     body = truncateAtWordBoundary(body, Math.max(100, body.length - excess - 1));
     message = [title, body, sourceLine].filter(Boolean).join('\n\n');
+  }
+
+  if (footnoteBlock) {
+    message = `${message}\n\n${footnoteBlock}`;
   }
 
   return message.trim();

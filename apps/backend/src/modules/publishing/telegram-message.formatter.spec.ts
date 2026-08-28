@@ -91,5 +91,20 @@ describe('telegram-message.formatter', () => {
       expect(msg.length).toBeLessThanOrEqual(3900);
       expect(msg).toContain('https://example.com/fed');
     });
+
+    it('appends compliance footnote at the end, separated by empty line (Sprint 19)', () => {
+      const msg = buildTelegramMessage(fullNews, ['Required disclosure text.']);
+      expect(msg.endsWith('Source: CNBC — https://example.com/fed\n\nRequired disclosure text.')).toBe(true);
+    });
+
+    it('respects length budget with footnotes attached (Sprint 19)', () => {
+      const msg = buildTelegramMessage({
+        ...fullNews,
+        translatedText: 'b '.repeat(4000),
+      }, ['FA '.repeat(40)]);
+      expect(msg.length).toBeLessThanOrEqual(3900);
+      expect(msg.endsWith('FA'.trim()) || msg.includes('FA')).toBe(true);
+      expect(msg).toContain('https://example.com/fed');
+    });
   });
 });

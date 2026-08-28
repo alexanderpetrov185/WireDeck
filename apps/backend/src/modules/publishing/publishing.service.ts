@@ -6,6 +6,7 @@ import { PUBLISHER_TOKEN } from './providers/publisher.token';
 import { LoggerService } from '../../common/logger/logger.service';
 import { PublishingResult } from './publishing-result.interface';
 import { buildTelegramMessage } from './telegram-message.formatter';
+import { ComplianceService } from '../compliance/compliance.service';
 
 /**
  * Сервис публикации новостей в Telegram.
@@ -27,6 +28,7 @@ export class PublishingService {
     private readonly newsService: NewsService,
     @Inject(PUBLISHER_TOKEN) private readonly publisher: Publisher,
     private readonly logger: LoggerService,
+    private readonly complianceService: ComplianceService,
   ) {}
 
   /**
@@ -68,7 +70,49 @@ export class PublishingService {
       return { processed: 0, skipped: 0, errors: 1 };
     }
 
-    const text = buildTelegramMessage(news);
+    // Sprint 19: compliance scan итогового текста поста (до отправки).
+    const baseText = buildTelegramMessage(news);
+    const scan = this.complianceService.scan(baseText);
+
+    if (scan.labels.length > 0) {
+      // Сохраняем labels в DB (для admin visibility) — и при label, и при block.
+      try {
+        await this.newsService.update(id, { complianceLabels: scan.labels.join(',') });
+      } catch (error) {
+        // Не роняем публикацию из-за сбоя записи labels.
+        const msg = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`Failed to persist compliance labels for news ${id}: ${msg}`, this.context);
+      }
+    }
+
+    if (scan.blocked) {
+      // Compliance block: не публикуем, возвращаем claim в APPROVED.
+      // Новость остаётся доступной оператору для ручного разбора.
+      for (const m of scan.matches) {
+        this.logger.error(
+          `Compliance BLOCK: news ${id}, category=${m.category}, action=${m.action}, matched term="${m.term}"`,
+          undefined,
+          this.context,
+        );
+      }
+      await this.newsService.revertPublishingClaim(id);
+      this.logger.error(
+        `News ${id} blocked by compliance policy (labels: ${scan.labels.join(',')}). Manual review required.`,
+        this.context,
+      );
+      return { processed: 0, skipped: 0, errors: 1 };
+    }
+
+    // Label: сноски из конфига, append в конец поста.
+    const text = buildTelegramMessage(news, scan.footnotes);
+    if (scan.footnotes.length > 0) {
+      for (const m of scan.matches) {
+        this.logger.warn(
+          `Compliance LABEL: news ${id}, category=${m.category}, action=${m.action}, matched term="${m.term}"`,
+          this.context,
+        );
+      }
+    }
 
     try {
       const telegramMessageId = await this.publisher.publish(text);

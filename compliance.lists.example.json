@@ -1,0 +1,16 @@
+{
+  "foreign_agent": {
+    "action": "label",
+    "footnote": "Материал содержит информацию о лице, признанном иностранным агентом (пример из fixture-набора).",
+    "terms": ["Example Foreign Agent Name", "Example Foreign Agent Org"]
+  },
+  "terror_extremist": {
+    "action": "block",
+    "terms": ["Example Extremist Organization (fixture only)"]
+  },
+  "undesirable_org": {
+    "action": "label",
+    "footnote": "Организация из fixture-набора признана нежелательной (пример).",
+    "terms": ["Example Undesirable Org"]
+  }
+}
