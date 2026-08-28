@@ -39,7 +39,15 @@ export class OpenAiTranslationProvider implements TranslationProvider {
     const url = this.configService.get<string>('TRANSLATION_PROVIDER_URL', DEFAULT_TRANSLATION_URL);
     const model = this.configService.get<string>('TRANSLATION_MODEL', DEFAULT_TRANSLATION_MODEL);
 
-    const prompt = `Translate the following text to ${targetLanguage}. Return ONLY the translated text, no additional formatting, no markdown, no explanation.
+        const prompt = `Translate the following news text into ${targetLanguage}.
+Follow these rules, in order of priority:
+1. Output ONLY the translated text — no markdown, no extra formatting, no explanation, no quotes around it.
+2. Keep ALL numbers, percentages, currency amounts ($, €, ₽, £), symbols (%, °C, etc.), dates/times and stock tickers (BTC, AAPL, S&P 500) EXACTLY as-is, unchanged.
+3. Translate naturally and idiomatically — like a professional news editor, NOT word-for-word or literal.
+4. Preserve the original news style and tone: concise, factual, headline-style.
+5. Do NOT omit or paraphrase numeric values, tickers, or any exact figures.
+6. Keep sentences short and clear. Do not add editorial comments.
+
 Text to translate:
 ${text.slice(0, 4000)}`;
 

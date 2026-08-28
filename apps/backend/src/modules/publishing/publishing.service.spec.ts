@@ -6,6 +6,7 @@ import { PUBLISHER_TOKEN } from './providers/publisher.token';
 import { LoggerService } from '../../common/logger/logger.service';
 import { NewsStatus } from '../news/entities/news.entity';
 import { ComplianceService } from '../compliance/compliance.service';
+import { ConfigService } from '@nestjs/config';
 
 describe('PublishingService', () => {
   let service: PublishingService;
@@ -75,6 +76,15 @@ describe('PublishingService', () => {
           provide: ComplianceService,
           useValue: { scan: jest.fn().mockReturnValue({ labels: [], footnotes: [], blocked: false, matches: [] }) },
         },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string) => {
+              if (key === 'PUBLISH_DELAY_MS') return '0'; // no delay in tests
+              return null;
+            }),
+          },
+        },
       ],
     }).compile();
 
@@ -102,7 +112,7 @@ describe('PublishingService', () => {
       expect(newsService.claimForPublishing).toHaveBeenCalledWith('uuid-1');
       // Sprint 13: publish path использует общий formatter.
       expect(publisher.publish).toHaveBeenCalledWith(
-        'Test Title\n\nTranslated text content\n\nSource: Test Feed — https://test.com/1',
+        'Test Title\n\nTranslated text content\n\nSource: Test Feed — https://test.com/1\n\n#business',
       );
       expect(newsService.markPublished).toHaveBeenCalledWith('uuid-1', '123456');
     });

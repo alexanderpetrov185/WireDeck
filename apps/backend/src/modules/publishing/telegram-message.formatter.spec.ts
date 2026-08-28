@@ -22,6 +22,7 @@ describe('telegram-message.formatter', () => {
         'Fed raises rates by 25 basis points',
         'The Federal Reserve raised interest rates by 25 basis points, signaling caution.',
         'Source: CNBC — https://example.com/fed',
+        '#fed',
       ]);
     });
 
@@ -94,7 +95,8 @@ describe('telegram-message.formatter', () => {
 
     it('appends compliance footnote at the end, separated by empty line (Sprint 19)', () => {
       const msg = buildTelegramMessage(fullNews, ['Required disclosure text.']);
-      expect(msg.endsWith('Source: CNBC — https://example.com/fed\n\nRequired disclosure text.')).toBe(true);
+      // Hashtags come before footnotes, so footnote is at the very end after hashtags
+      expect(msg.endsWith('#fed\n\nRequired disclosure text.')).toBe(true);
     });
 
     it('respects length budget with footnotes attached (Sprint 19)', () => {

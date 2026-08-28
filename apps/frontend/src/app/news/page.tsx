@@ -137,8 +137,8 @@ export default async function NewsListPage({
                 <tbody className="bg-white divide-y divide-gray-200">
                   {news.map((item) => (
                     <tr key={item.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Link href={`/news/${item.id}`} className="text-blue-600 hover:text-blue-800">
+                                            <td className="px-6 py-4 whitespace-nowrap overflow-hidden">
+                        <Link href={`/news/${item.id}`} className="text-blue-600 hover:text-blue-800 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg block truncate">
                           {item.title || item.rawText.slice(0, 80) || '—'}
                         </Link>
                         {item.complianceLabels && (

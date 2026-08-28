@@ -36,7 +36,7 @@ export default async function TopNav({ active }: { active?: string }) {
     <header className="bg-white shadow">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-8">
+                    <div className="flex items-center gap-8 flex-wrap">
             <h1 className="text-xl font-bold text-gray-900">WireDeck Admin</h1>
             <nav className="flex items-center gap-1">
               {NAV_ITEMS.map((item) => {

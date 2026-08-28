@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Admin: prevent oversized images/icons from blowing layout */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;

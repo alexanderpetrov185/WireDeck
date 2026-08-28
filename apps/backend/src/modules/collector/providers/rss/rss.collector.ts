@@ -132,9 +132,14 @@ export class RssCollector implements NewsCollector {
     // Defensive mapping: ищем контент в разных возможных полях
     const rawText = item['content:encoded'] || item.content || item.summary || item.contentSnippet || item.description || '';
 
+    // sourceId: guid приоритетнее, если нет - используем link.
+    // Sprint 21: defensive truncate до 512 символов — колонка source_id varchar(512),
+    // а guid/link бывают сколь угодно длинными (защита от "value too long" даже
+    // для будущих источников).
+    const sourceIdRaw = item.guid || item.link || `${sourceName}-${item.title}-${publishedAt?.getTime()}`;
+
     return {
-      // sourceId: guid приоритетнее, если нет - используем link
-      sourceId: item.guid || item.link || `${sourceName}-${item.title}-${publishedAt?.getTime()}`,
+      sourceId: sourceIdRaw.slice(0, 512),
       source: NewsSource.RSS,
       sourceName: sourceName,
       author: item.creator || item.author || null,

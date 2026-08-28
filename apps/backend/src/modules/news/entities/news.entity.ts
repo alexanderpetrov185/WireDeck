@@ -43,7 +43,8 @@ export class News {
   id: string;
 
   // ID события в источнике (tweet id / article id / symbol+timestamp) — основа дедупа по источнику
-  @Column({ name: 'source_id', type: 'varchar', length: 64 })
+  // Sprint 21: varchar(64) → 512 — RSS guid/link бывают полными URL (>64), узкая колонка теряла новости.
+  @Column({ name: 'source_id', type: 'varchar', length: 512 })
   sourceId: string;
 
   // Ссылка на оригинал (требование: короткая выжимка + ссылка на источник)

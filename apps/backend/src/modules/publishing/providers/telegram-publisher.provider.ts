@@ -57,6 +57,9 @@ export class TelegramPublisherProvider implements Publisher {
           {
             chat_id: channelId,
             text: safeText,
+            // Sprint 21: отключаем web page preview — иначе Telegram тянет огромный
+            // link-preview, раздувающий пост и замедляющий публикацию.
+            disable_web_page_preview: true,
           },
           {
             headers: {

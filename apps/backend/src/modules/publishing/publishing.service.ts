@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NewsService } from '../news/news.service';
 import { NewsStatus } from '../news/entities/news.entity';
 import { Publisher } from './providers/publisher.interface';
@@ -7,6 +8,7 @@ import { LoggerService } from '../../common/logger/logger.service';
 import { PublishingResult } from './publishing-result.interface';
 import { buildTelegramMessage } from './telegram-message.formatter';
 import { ComplianceService } from '../compliance/compliance.service';
+import { DEFAULT_PUBLISH_DELAY_MS } from './publishing.constants';
 
 /**
  * Сервис публикации новостей в Telegram.
@@ -29,6 +31,7 @@ export class PublishingService {
     @Inject(PUBLISHER_TOKEN) private readonly publisher: Publisher,
     private readonly logger: LoggerService,
     private readonly complianceService: ComplianceService,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -153,7 +156,12 @@ export class PublishingService {
 
     const result: PublishingResult = { processed: 0, skipped: 0, errors: 0 };
 
-    for (const news of approvedNews) {
+    // Sprint 21: задержка между постами в batch (и только между ними, не после последнего).
+    // Держит канал читабельным и обходит агрессивные лимиты Telegram/превью.
+    const publishDelayMs = this.resolvePublishDelayMs();
+
+    for (let i = 0; i < approvedNews.length; i++) {
+      const news = approvedNews[i];
       try {
         const itemResult = await this.publishOne(news.id);
         result.processed += itemResult.processed;
@@ -163,6 +171,11 @@ export class PublishingService {
         this.logger.error(`Unhandled error during batch publishing of news ${news.id}: ${error}`, undefined, this.context);
         result.errors += 1;
       }
+
+      // Delay только между постами (не перед первым, не после последнего).
+      if (publishDelayMs > 0 && i < approvedNews.length - 1) {
+        await this.sleep(publishDelayMs);
+      }
     }
 
     this.logger.log(
@@ -171,5 +184,27 @@ export class PublishingService {
     );
 
     return result;
+  }
+
+  /**
+   * Разрешает PUBLISH_DELAY_MS с валидацией: неотрицательное целое, иначе дефолт.
+   * 0 разрешён — отключает паузу (удобно для тестов/срочного ручного запуска).
+   */
+  private resolvePublishDelayMs(): number {
+    const raw = this.configService.get<string>('PUBLISH_DELAY_MS', String(DEFAULT_PUBLISH_DELAY_MS));
+    const parsed = Number(raw);
+    if (isNaN(parsed) || !isFinite(parsed) || parsed < 0) {
+      this.logger.warn(
+        `Invalid PUBLISH_DELAY_MS "${raw}", using default ${DEFAULT_PUBLISH_DELAY_MS}`,
+        this.context,
+      );
+      return DEFAULT_PUBLISH_DELAY_MS;
+    }
+    return Math.floor(parsed);
+  }
+
+  /** Пауза между постами. */
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

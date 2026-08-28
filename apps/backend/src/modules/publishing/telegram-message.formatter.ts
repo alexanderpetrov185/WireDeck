@@ -30,6 +30,78 @@ interface TelegramMessageNews {
   sourceUrl?: string | null;
   sourceName?: string | null;
   source?: string | null;
+  category?: string | null;
+}
+
+/**
+ * Sprint 21: хэштеги поста.
+ * Категория-маппинг (совпадает с доменами AI-классификации, см. ARCHITECTURE.md)
+ * + небольшой keyword-фолбэк по телу/заголовку. Максимум MAX_HASHTAGS шт,
+ * без спама — только простой словарь, без ML.
+ */
+const MAX_HASHTAGS = 3;
+
+const CATEGORY_HASHTAGS: Record<string, string> = {
+  finance: '#finance',
+  markets: '#markets',
+  business: '#business',
+  economy: '#economy',
+  technology: '#tech',
+  crypto: '#crypto',
+  oil: '#oil',
+};
+
+const KEYWORD_HASHTAGS: Array<{ re: RegExp; tag: string }> = [
+  { re: /\boil\b/i, tag: '#oil' },
+  { re: /\bgold\b/i, tag: '#gold' },
+  { re: /\bbitcoin\b/i, tag: '#bitcoin' },
+  { re: /\beth(ereum)?\b/i, tag: '#eth' },
+  { re: /\bfed\b|\binterest rates\b/i, tag: '#fed' },
+  { re: /\bstocks?\b/i, tag: '#stocks' },
+  { re: /\bcrypto(currency)?\b/i, tag: '#crypto' },
+  { re: /\bmarkets?\b/i, tag: '#markets' },
+  { re: /\bgdp\b|\binflation\b/i, tag: '#macro' },
+];
+
+/** Валидация хэштега: только латиница/цифры/подчёркивание. */
+function sanitizeHashtag(raw: string): string | null {
+  const cleaned = raw.replace('#', '').replace(/[^A-Za-z0-9_]/g, '').trim();
+  return cleaned ? `#${cleaned}` : null;
+}
+
+/**
+ * Выводит до MAX_HASHTAGS уникальных хэштегов.
+ * Сначала кандидат из category-мапа, затем keyword-совпадения по телу/заголовку.
+ */
+export function buildHashtags(news: TelegramMessageNews): string[] {
+  const tags: string[] = [];
+
+  // 1) Категория.
+  const cat = news.category?.trim().toLowerCase();
+  if (cat) {
+    const byCategory = CATEGORY_HASHTAGS[cat];
+    const sanitized = byCategory ? sanitizeHashtag(byCategory) : null;
+    if (sanitized && !tags.includes(sanitized)) {
+      tags.push(sanitized);
+    }
+  }
+
+  // 2) Keyword-фолбэк по тексту поста (тело/заголовок/raw).
+  const haystack = `${news.title ?? ''} ${news.summary ?? ''} ${news.translatedText ?? ''} ${news.rawText ?? ''}`;
+
+  for (const { re, tag } of KEYWORD_HASHTAGS) {
+    if (tags.length >= MAX_HASHTAGS) {
+      break;
+    }
+    if (re.test(haystack)) {
+      const sanitized = sanitizeHashtag(tag);
+      if (sanitized && !tags.includes(sanitized)) {
+        tags.push(sanitized);
+      }
+    }
+  }
+
+  return tags.slice(0, MAX_HASHTAGS);
 }
 
 /** Обрезает строку по границе слова, не оставляя висячего пробела/переноса. */
@@ -81,6 +153,7 @@ export function buildSourceLine(news: TelegramMessageNews): string {
  * Собирает итоговый текст Telegram-сообщения.
  * footnotes — обязательные compliance-сноски (Sprint 19), append в конец
  * с учётом length-budget (не вытесняются truncation'ом).
+ * Sprint 21: до 3 хэштегов (после source, перед сносками).
  * Гарантирует длину ≤ MAX_MESSAGE_LENGTH.
  */
 export function buildTelegramMessage(news: TelegramMessageNews, footnotes: string[] = []): string {
@@ -93,6 +166,12 @@ export function buildTelegramMessage(news: TelegramMessageNews, footnotes: strin
   }
 
   const sourceLine = buildSourceLine(news);
+
+  // Sprint 21: хэштеги (до 3 шт), отдельный блок после source.
+  const hashtags = buildHashtags(news);
+  const hashtagLine = hashtags.length > 0 ? hashtags.join(' ') : '';
+  const hasHashtags = hashtagLine.length > 0;
+
   // Compliance-сноски: отдельный блок в конце (пустая строка перед блоком).
   const footnoteBlock = footnotes.length > 0 ? footnotes.join('\n') : '';
 
@@ -107,18 +186,23 @@ export function buildTelegramMessage(news: TelegramMessageNews, footnotes: strin
     parts.push(sourceLine);
   }
 
-  // Бюджет базовой части: резервируем место под сноски.
-  const baseBudget = footnoteBlock
-    ? MAX_MESSAGE_LENGTH - footnoteBlock.length - 2 // 2 = '\n\n' разделитель
-    : MAX_MESSAGE_LENGTH;
+  // Бюджет базовой части: резервируем место под хэштеги и сноски.
+  // 2 символа на каждый '\n\n' разделитель.
+  const suffixLength = (hasHashtags ? hashtagLine.length + 2 : 0) +
+    (footnoteBlock ? footnoteBlock.length + 2 : 0);
+  const baseBudget = MAX_MESSAGE_LENGTH - suffixLength;
 
   let message = parts.join('\n\n');
 
-  // Последний предохранитель по общей длине: жмём body, сохраняя source/title/footnotes.
+  // Последний предохранитель по общей длине: жмём body, сохраняя source/title/suffix.
   if (message.length > baseBudget && body) {
     const excess = message.length - baseBudget;
     body = truncateAtWordBoundary(body, Math.max(100, body.length - excess - 1));
     message = [title, body, sourceLine].filter(Boolean).join('\n\n');
+  }
+
+  if (hasHashtags) {
+    message = `${message}\n\n${hashtagLine}`;
   }
 
   if (footnoteBlock) {
