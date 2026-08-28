@@ -50,6 +50,9 @@ docker compose up -d
 ```
 Поднимает PostgreSQL, Redis, Backend (3000), Frontend (3001).
 
+**Production/VPS:** см. `docs/DEPLOY.md` — reverse-proxy + TLS (Caddy),
+ports policy, secrets checklist, Postgres backup/restore, update flow.
+
 ### Docker Compose (отдельные команды)
 ```bash
 npm run docker:up       # docker compose -f compose.yaml up -d

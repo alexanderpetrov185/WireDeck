@@ -1,0 +1,19 @@
+# WireDeck — reference Caddyfile (Sprint 20).
+# Только reference, НЕ часть базового compose.yaml.
+#
+# Применение (см. docs/DEPLOY.md):
+#   - Вариант A: положить рядом с Caddy-контейнером, подключённым к сети
+#     compose-сети по умолчанию (frontend:3001 резолвится по имени сервиса).
+#   - Вариант B: запустить Caddy на хосте и указать 127.0.0.1:3001
+#     (замените frontend:3001 на 127.0.0.1:3001).
+#
+# Замените wiredeck.example.com на реальный домен перед использованием.
+
+wiredeck.example.com {
+    # Let's Encrypt авто-выпуск сертификата + https-redirect (по умолчанию).
+    reverse_proxy frontend:3001
+
+    # На случай, если нужен только frontend наружу; backend НЕ публикуем.
+    # X-Forwarded-Proto: https Caddy выставляет автоматически →
+    # Next.js admin session-cookie получит Secure-флаг.
+}

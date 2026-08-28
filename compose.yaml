@@ -46,7 +46,9 @@ services:
     container_name: wiredeck-backend
     restart: always
     ports:
-      - "3000:3000"
+      # BIND_IP: ограничить публикацию только loopback за reverse-proxy
+      # (по умолчанию 0.0.0.0 — все интерфейсы, поведение dev не меняется).
+      - "${BIND_IP:-0.0.0.0}:3000:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -108,7 +110,7 @@ services:
     container_name: wiredeck-frontend
     restart: always
     ports:
-      - "3001:3001"
+      - "${BIND_IP:-0.0.0.0}:3001:3001"
     depends_on:
       - backend
     environment:
@@ -125,6 +127,14 @@ services:
       - ADMIN_MODERATOR=${ADMIN_MODERATOR:-frontend-admin}
       # Пароль admin BFF (/api/admin/*). Без него админ-API закрыт (401).
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
+    healthcheck:
+      # Sprint 20: healthcheck frontend — статика /login всегда 200
+      # (в отличие от /, не зависит от состояния backend).
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/login || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   postgres_data:
