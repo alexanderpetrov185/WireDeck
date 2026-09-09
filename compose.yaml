@@ -87,6 +87,12 @@ services:
       # Sprint 22b: source tiers (по образцу compliance). Оператор:
       #   cp source.tiers.example.json source.tiers.json  (затем отредактировать)
       - SOURCE_TIERS_PATH=${SOURCE_TIERS_PATH:-/app/source.tiers.json}
+      # Sprint 22c: Twitter/X collector. Пустой ключ = disabled, zero spend.
+      - TWITTER_API_KEY=${TWITTER_API_KEY:-}
+      - TWITTER_VENDOR_URL=${TWITTER_VENDOR_URL:-https://api.twitterapi.io}
+      - TWITTER_WATCHLIST_PATH=${TWITTER_WATCHLIST_PATH:-/app/twitter.watchlist.json}
+      - TWITTER_POLL_LIMIT=${TWITTER_POLL_LIMIT:-15}
+      - TWITTER_MAX_PER_DAY=${TWITTER_MAX_PER_DAY:-500}
       - SCHEDULER_ENABLED=${SCHEDULER_ENABLED:-false}
       - PIPELINE_INTERVAL_MS=${PIPELINE_INTERVAL_MS:-600000}
       - PIPELINE_BATCH_LIMIT=${PIPELINE_BATCH_LIMIT:-10}

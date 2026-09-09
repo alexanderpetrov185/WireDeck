@@ -82,7 +82,10 @@ export class IngestionService {
           hash: hash,
           publishedAt: collected.publishedAt,
           // Sprint 22b: tier из конфига source.tiers.json (единая точка для всех коллекторов).
-          sourceTier: this.sourceTiers.resolve(collected.sourceName),
+          // Sprint 22c: источник может переопределить (Twitter watchlist: tier/unconfirmed).
+          sourceTier:
+            collected.tierOverride ?? this.sourceTiers.resolve(collected.sourceName),
+          unconfirmed: collected.unconfirmedOverride === true,
         });
 
         result.saved++;

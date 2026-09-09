@@ -9,6 +9,7 @@ import { NewsCollector } from './interfaces/news-collector.interface';
 import { NEWS_COLLECTORS } from './constants/collector.tokens';
 import { RssCollector } from './providers/rss/rss.collector';
 import { TwitterCollector } from './providers/twitter/twitter.collector';
+import { TwitterWatchlistService } from './providers/twitter/twitter-watchlist.service';
 import { NewsApiCollector } from './providers/newsapi/newsapi.collector';
 import { GoogleNewsCollector } from './providers/google-news/google-news.collector';
 import { BinanceCollector } from './providers/binance/binance.collector';
@@ -25,6 +26,7 @@ import { CoinGeckoCollector } from './providers/coingecko/coingecko.collector';
     CollectorService,
     RssCollector,
     TwitterCollector,
+    TwitterWatchlistService,
     NewsApiCollector,
     GoogleNewsCollector,
     BinanceCollector,

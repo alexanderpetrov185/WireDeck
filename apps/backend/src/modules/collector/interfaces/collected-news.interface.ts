@@ -32,4 +32,9 @@ export interface CollectedNews {
 
   // Время публикации в источнике
   publishedAt: Date | null;
+
+  // ── Sprint 22c: overrides от источников со своим tier-конфигом ──
+  // (Twitter watchlist). Если заданы — приоритетнее source.tiers.json.
+  tierOverride?: number | null;
+  unconfirmedOverride?: boolean | null;
 }

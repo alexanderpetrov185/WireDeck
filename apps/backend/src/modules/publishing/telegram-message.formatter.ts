@@ -57,6 +57,11 @@ const CATEGORY_HASHTAGS: Record<string, string> = {
   oil: '#oil',
 };
 
+// Sprint 22c: тег по типу источника (Twitter/X посты помечаются #x).
+const SOURCE_HASHTAGS: Record<string, string> = {
+  twitter: '#x',
+};
+
 const KEYWORD_HASHTAGS: Array<{ re: RegExp; tag: string }> = [
   { re: /\boil\b/i, tag: '#oil' },
   { re: /\bgold\b/i, tag: '#gold' },
@@ -87,6 +92,16 @@ export function buildHashtags(news: TelegramMessageNews): string[] {
   if (cat) {
     const byCategory = CATEGORY_HASHTAGS[cat];
     const sanitized = byCategory ? sanitizeHashtag(byCategory) : null;
+    if (sanitized && !tags.includes(sanitized)) {
+      tags.push(sanitized);
+    }
+  }
+
+  // 1b) Sprint 22c: тег источника (twitter → #x).
+  const src = news.source?.trim().toLowerCase();
+  if (src) {
+    const bySource = SOURCE_HASHTAGS[src];
+    const sanitized = bySource ? sanitizeHashtag(bySource) : null;
     if (sanitized && !tags.includes(sanitized)) {
       tags.push(sanitized);
     }

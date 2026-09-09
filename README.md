@@ -152,7 +152,12 @@ Tier 1 получает смягчённый порог автопубликац
 Критерии: **tier 1** — первоисточники макро/рынков (Reuters, CNBC, MarketWatch, WSJ);
 **tier 2** — полезный фон (Yahoo Finance, Investing.com, BBC Business, CoinDesk);
 **tier 3** — lifestyle/human-interest/спорт/мнения без цифр (в default не подключаются).
-Twitter watchlist (для Sprint 22c) — заготовка `twitter.watchlist.example.json`, код чтения пока отсутствует.
+Twitter watchlist (для Twitter/X коллектора) — `twitter.watchlist.example.json`.
+Коллектор **выключен без `TWITTER_API_KEY`** (zero spend, ни одного вызова vendor'у).
+Включение: дешёвый vendor (twitterapi.io / socialdata.tools, ~$0.15–0.30/1k tweets
+→ ~$1–4/мес при лимитах по умолчанию: 15 аккаунтов/тик, 500 запросов/день, circuit
+breaker при даунтайме vendor'а). Официальный X API ($100/мес), скрапинг, Nitter и
+realtime — не используются. Оценка ToS-риска third-party vendor'а — на операторе.
 
 В `manual`/`hybrid` неопубликованное висит в `/moderation` (badge в шапке). Если канал «молчит», проверьте в порядке: `SCHEDULER_ENABLED`, `MODERATION_MODE`, и не пустая ли очередь модерации.
 

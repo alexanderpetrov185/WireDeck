@@ -38,6 +38,8 @@ COPY --from=builder /app/package.json ./
 COPY compliance.lists.example.json ./compliance.lists.json
 # Sprint 22b: source tiers — аналогично, example как default.
 COPY source.tiers.example.json ./source.tiers.json
+# Sprint 22c: twitter watchlist example (collector выключен без TWITTER_API_KEY).
+COPY twitter.watchlist.example.json ./twitter.watchlist.json
 
 # Создаем директорию для логов
 RUN mkdir -p /app/logs
