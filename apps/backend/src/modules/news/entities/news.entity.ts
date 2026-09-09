@@ -135,6 +135,36 @@ export class News {
   @Column({ name: 'compliance_labels', type: 'varchar', length: 255, nullable: true })
   complianceLabels: string | null;
 
+  // ── Sprint 22a: market-impact поля (финансовая ориентация продукта) ──
+
+  /** Рыночная значимость 0..1 от AI. NULL = legacy/не оценена. */
+  @Column({ name: 'impact_score', type: 'real', nullable: true })
+  impactScore: number | null;
+
+  /** 1-3 предложения: на какие рынки/активы может повлиять и почему. */
+  @Column({ name: 'impact_thesis', type: 'text', nullable: true })
+  impactThesis: string | null;
+
+  /** Затронутые активы/тикеры, comma-separated: "OIL,SPX,BTC". */
+  @Column({ name: 'affected_assets', type: 'varchar', length: 255, nullable: true })
+  affectedAssets: string | null;
+
+  /** Затронутые секторы, comma-separated: "energy,banking". */
+  @Column({ name: 'affected_sectors', type: 'varchar', length: 255, nullable: true })
+  affectedSectors: string | null;
+
+  /** Горизонт эффекта: intraday / short / medium. */
+  @Column({ name: 'time_horizon', type: 'varchar', length: 16, nullable: true })
+  timeHorizon: string | null;
+
+  /** Tier источника: 1=market-moving, 2=useful, 3=noise. */
+  @Column({ name: 'source_tier', type: 'smallint', nullable: true, default: 2 })
+  sourceTier: number | null;
+
+  /** Insider/unconfirmed-флаг: источник «ещё не официально». Маркировка в посте обязательна. */
+  @Column({ type: 'boolean', nullable: true, default: false })
+  unconfirmed: boolean | null;
+
   // Время публикации новости в оригинальном источнике
   // (заполняется коллектором при сборе данных)
   @Column({ name: 'published_at', type: 'timestamptz', nullable: true })

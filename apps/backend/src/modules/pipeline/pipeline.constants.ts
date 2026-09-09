@@ -28,6 +28,14 @@ export const MODERATION_MODES: ModerationMode[] = ['manual', 'auto', 'hybrid'];
 export const DEFAULT_MODERATION_MODE: ModerationMode = 'auto';
 export const DEFAULT_MODERATION_AUTO_IMPORTANCE_MIN = 0.6;
 
+// Sprint 22a: market-impact publish gating.
+// Автопубликация требует И importance И impact порогов (когда impactScore известен).
+export const DEFAULT_IMPACT_GATE_ENABLED = true;
+export const DEFAULT_IMPACT_PUBLISH_MIN = 0.5;
+// Смягчённый порог для tier-1 источников (официальные/макро). Применяется,
+// только если у новости проставлен sourceTier=1.
+export const DEFAULT_IMPACT_TIER1_MIN = 0.4;
+
 // Настройки BullMQ (не путать с timeout'ом!)
 // lockDuration — это время, в течение которого Worker удерживает lock на job
 // для механизма stalled-job detection. Продлевается автоматически при активной обработке.

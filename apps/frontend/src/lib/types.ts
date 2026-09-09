@@ -38,6 +38,13 @@ export interface NewsItem {
   importance: number | null;
   sentiment: string | null;
   category: string | null;
+  // Sprint 22a: market impact
+  impactScore: number | null;
+  impactThesis: string | null;
+  affectedAssets: string | null;
+  affectedSectors: string | null;
+  timeHorizon: string | null;
+  unconfirmed: boolean | null;
   hash: string;
   duplicateOf: string | null;
   telegramMessageId: string | null;

@@ -54,9 +54,16 @@ export class AiProcessingService {
         summary: aiResult.summary,
         importance: aiResult.importance,
         category: aiResult.category,
+        // Sprint 22a: market-impact поля (undefined → не перезаписываем).
+        ...(aiResult.impactScore !== undefined && { impactScore: aiResult.impactScore }),
+        ...(aiResult.impactThesis !== undefined && { impactThesis: aiResult.impactThesis }),
+        ...(aiResult.affectedAssets !== undefined && { affectedAssets: aiResult.affectedAssets }),
+        ...(aiResult.affectedSectors !== undefined && { affectedSectors: aiResult.affectedSectors }),
+        ...(aiResult.timeHorizon !== undefined && { timeHorizon: aiResult.timeHorizon }),
         status: NewsStatus.PROCESSED,
       });
-      this.logger.log(`News ${id} processed (importance=${aiResult.importance}, category=${aiResult.category})`, this.context);
+      const impactPart = aiResult.impactScore !== undefined ? `, impact=${aiResult.impactScore}` : '';
+      this.logger.log(`News ${id} processed (importance=${aiResult.importance}${impactPart}, category=${aiResult.category})`, this.context);
       return { processed: 1, skipped: 0, errors: 0 };
     } catch (error) {
       // Sprint 12: rate limit пробрасывается — processPending сделает ранний

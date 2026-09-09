@@ -86,6 +86,39 @@ export default async function NewsDetailPage({
         </div>
       )}
 
+      {/* Sprint 22a: market impact */}
+      {(news.impactScore !== null && news.impactScore !== undefined || news.impactThesis) && (
+        <div className="mb-6 rounded-md bg-indigo-50 border border-indigo-200 p-4">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <span className="text-sm font-semibold text-indigo-900">Market impact</span>
+            {typeof news.impactScore === 'number' && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-600 text-white">
+                {news.impactScore.toFixed(2)}
+              </span>
+            )}
+            {news.timeHorizon && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                {news.timeHorizon}
+              </span>
+            )}
+            {news.unconfirmed && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                ⚠ unconfirmed
+              </span>
+            )}
+          </div>
+          {news.impactThesis && (
+            <p className="text-sm text-gray-800 whitespace-pre-wrap">{news.impactThesis}</p>
+          )}
+          {(news.affectedAssets || news.affectedSectors) && (
+            <p className="mt-2 text-xs text-gray-600">
+              {news.affectedAssets && <span className="mr-3">Assets: <b>{news.affectedAssets}</b></span>}
+              {news.affectedSectors && <span>Sectors: <b>{news.affectedSectors}</b></span>}
+            </p>
+          )}
+        </div>
+      )}
+
       {banner && (
         <div
           role="status"

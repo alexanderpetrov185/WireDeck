@@ -76,6 +76,10 @@ services:
       - TELEGRAM_CHANNEL_ID=${TELEGRAM_CHANNEL_ID}
       - MODERATION_MODE=${MODERATION_MODE:-auto}
       - MODERATION_AUTO_IMPORTANCE_MIN=${MODERATION_AUTO_IMPORTANCE_MIN:-0.6}
+      # Sprint 22a: market-impact publish gating.
+      - IMPACT_GATE_ENABLED=${IMPACT_GATE_ENABLED:-true}
+      - IMPACT_PUBLISH_MIN=${IMPACT_PUBLISH_MIN:-0.5}
+      - IMPACT_TIER1_MIN=${IMPACT_TIER1_MIN:-0.4}
       # Sprint 19: compliance watchlists (путь внутри контейнера).
       # Стандарт: /app/compliance.lists.json. Файл монтируется volume'ом ниже;
       # если volume недоступен — в образ попадает example (из Dockerfile).

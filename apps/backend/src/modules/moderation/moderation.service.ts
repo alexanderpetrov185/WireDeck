@@ -5,6 +5,9 @@ import { NewsStatus } from '../news/entities/news.entity';
 import { LoggerService } from '../../common/logger/logger.service';
 import { ModerationResult } from './moderation-result.interface';
 import {
+  DEFAULT_IMPACT_GATE_ENABLED,
+  DEFAULT_IMPACT_PUBLISH_MIN,
+  DEFAULT_IMPACT_TIER1_MIN,
   DEFAULT_MODERATION_AUTO_IMPORTANCE_MIN,
   DEFAULT_MODERATION_MODE,
   MODERATION_MODES,
@@ -21,12 +24,20 @@ import {
  * - manual — pipeline ничего не трогает, всё решает человек в админке;
  * - hybrid — auto только для sufficiently important
  *            (importance >= MODERATION_AUTO_IMPORTANCE_MIN), остальное ждёт человека.
+ *
+ * Sprint 22a: market-impact gate (IMPACT_GATE_ENABLED):
+ * при известном impactScore автопубликация требует impactScore >= порога
+ * (IMPACT_TIER1_MIN для sourceTier=1, иначе IMPACT_PUBLISH_MIN).
+ * impactScore == null → gate не применяется (legacy-новости).
  */
 @Injectable()
 export class ModerationService {
   private readonly context = 'ModerationService';
   private readonly mode: ModerationMode;
   private readonly autoImportanceMin: number;
+  private readonly impactGateEnabled: boolean;
+  private readonly impactPublishMin: number;
+  private readonly impactTier1Min: number;
 
   constructor(
     private readonly newsService: NewsService,
@@ -59,12 +70,46 @@ export class ModerationService {
       this.autoImportanceMin = parsedMin;
     }
 
+    // Sprint 22a: impact gate.
+    this.impactGateEnabled = configService.get<boolean>('IMPACT_GATE_ENABLED', DEFAULT_IMPACT_GATE_ENABLED) !== false;
+    this.impactPublishMin = this.resolveThreshold(configService, 'IMPACT_PUBLISH_MIN', DEFAULT_IMPACT_PUBLISH_MIN);
+    this.impactTier1Min = this.resolveThreshold(configService, 'IMPACT_TIER1_MIN', DEFAULT_IMPACT_TIER1_MIN);
+
     // Sprint 14 hotfix: явный лог resolved-политики на bootstrap,
     // чтобы сразу видеть, какой режим реально работает в контейнере.
     this.logger.log(
-      `Moderation policy resolved: mode=${this.mode}, autoImportanceMin=${this.autoImportanceMin}`,
+      `Moderation policy resolved: mode=${this.mode}, autoImportanceMin=${this.autoImportanceMin}, ` +
+        `impactGate=${this.impactGateEnabled ? 'on' : 'off'} (min=${this.impactPublishMin}, tier1Min=${this.impactTier1Min})`,
       this.context,
     );
+  }
+
+  /** Парсинг порога из env с валидацией 0..1. */
+  private resolveThreshold(configService: ConfigService, key: string, defaultValue: number): number {
+    const raw = configService.get<number>(key, defaultValue);
+    const parsed = Number(raw);
+    if (isNaN(parsed) || parsed < 0 || parsed > 1) {
+      this.logger.warn(`Invalid ${key} "${raw}", using default ${defaultValue}`, this.context);
+      return defaultValue;
+    }
+    return parsed;
+  }
+
+  /**
+   * Sprint 22a: проходит ли новость impact-гейт для автопубликации.
+   * - gate выключен → true;
+   * - impactScore неизвестен (null/undefined) → true (legacy-новости не блокируем);
+   * - tier-1 источник → смягчённый порог, иначе основной.
+   */
+  private passesImpactGate(news: { impactScore?: number | null; sourceTier?: number | null }): boolean {
+    if (!this.impactGateEnabled) {
+      return true;
+    }
+    if (typeof news.impactScore !== 'number') {
+      return true;
+    }
+    const threshold = news.sourceTier === 1 ? this.impactTier1Min : this.impactPublishMin;
+    return news.impactScore >= threshold;
   }
 
   /**
@@ -193,14 +238,21 @@ export class ModerationService {
     this.logger.log(`Found ${queuedNews.length} news to moderate (mode: ${this.mode})`, this.context);
 
     const result: ModerationResult = { processed: 0, skipped: 0, errors: 0 };
+    let impactDeferred = 0;
 
     for (const news of queuedNews) {
       // В batch-режиме модератором считается система.
+      // Sprint 22a: impact gate применяется в auto И hybrid (когда impactScore известен).
       if (this.mode === 'hybrid') {
         if (typeof news.importance !== 'number' || news.importance < this.autoImportanceMin) {
           result.skipped += 1;
           continue;
         }
+      }
+      if (typeof news.impactScore === 'number' && !this.passesImpactGate(news)) {
+        impactDeferred += 1;
+        result.skipped += 1;
+        continue;
       }
       const oneItemResult = await this.approveOne(news.id, 'system');
       result.processed += oneItemResult.processed;
@@ -215,7 +267,8 @@ export class ModerationService {
       );
     } else {
       this.logger.log(
-        `Moderation complete. Processed: ${result.processed}, Skipped: ${result.skipped}, Errors: ${result.errors}`,
+        `Moderation complete. Processed: ${result.processed}, Skipped: ${result.skipped}, Errors: ${result.errors}` +
+          (impactDeferred > 0 ? `, low-impact deferred: ${impactDeferred} (min=${this.impactPublishMin})` : ''),
         this.context,
       );
     }

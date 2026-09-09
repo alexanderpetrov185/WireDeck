@@ -383,4 +383,122 @@ describe('ModerationService', () => {
       expect(news.update).not.toHaveBeenCalled();
     });
   });
+
+  describe('market impact gating (Sprint 22a)', () => {
+    const queued = (id: string, impactScore: number | null, sourceTier?: number | null) =>
+      mockNews({ id, status: NewsStatus.QUEUED, importance: 0.9, impactScore, sourceTier });
+
+    // Создаёт сервис с impact-настройками.
+    async function createImpactService(opts: {
+      mode?: string;
+      gateEnabled?: boolean;
+      publishMin?: number;
+      tier1Min?: number;
+    }) {
+      configGet.mockImplementation((key: string, d?: unknown) => {
+        if (key === 'MODERATION_MODE') return opts.mode ?? 'auto';
+        if (key === 'IMPACT_GATE_ENABLED' && opts.gateEnabled !== undefined) return opts.gateEnabled;
+        if (key === 'IMPACT_PUBLISH_MIN' && opts.publishMin !== undefined) return opts.publishMin;
+        if (key === 'IMPACT_TIER1_MIN' && opts.tier1Min !== undefined) return opts.tier1Min;
+        return d;
+      });
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          ModerationService,
+          {
+            provide: NewsService,
+            useValue: { findById: jest.fn(), findByStatus: jest.fn(), update: jest.fn() },
+          },
+          { provide: LoggerService, useValue: { log: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() } },
+          { provide: ConfigService, useValue: { get: configGet } },
+        ],
+      }).compile();
+      return {
+        svc: module.get(ModerationService),
+        news: module.get(NewsService),
+        logger: module.get(LoggerService),
+      };
+    }
+
+    it('auto mode: low-impact item stays QUEUED (deferred), high-impact approved', async () => {
+      const { svc, news, logger } = await createImpactService({ mode: 'auto', publishMin: 0.5 });
+      (news.findByStatus as jest.Mock).mockResolvedValue([
+        queued('low', 0.3),
+        queued('high', 0.8),
+      ]);
+      (news.findById as jest.Mock).mockResolvedValue(queued('high', 0.8));
+      (news.update as jest.Mock).mockResolvedValue({});
+
+      const result = await svc.approvePending(50);
+
+      expect(result.processed).toBe(1);
+      expect(result.skipped).toBe(1);
+      expect(news.update).toHaveBeenCalledTimes(1);
+      expect(news.update).toHaveBeenCalledWith('high', expect.objectContaining({ status: NewsStatus.APPROVED }));
+      expect(logger.log).toHaveBeenCalledWith(
+        expect.stringContaining('low-impact deferred: 1'),
+        expect.any(String),
+      );
+    });
+
+    it('legacy item without impactScore is NOT gated (null passes)', async () => {
+      const { svc, news } = await createImpactService({ mode: 'auto', publishMin: 0.5 });
+      (news.findByStatus as jest.Mock).mockResolvedValue([queued('legacy', null)]);
+      (news.findById as jest.Mock).mockResolvedValue(queued('legacy', null));
+      (news.update as jest.Mock).mockResolvedValue({});
+
+      const result = await svc.approvePending(50);
+
+      expect(result.processed).toBe(1);
+      expect(news.update).toHaveBeenCalledTimes(1);
+    });
+
+    it('tier-1 source uses softened threshold', async () => {
+      const { svc, news } = await createImpactService({ mode: 'auto', publishMin: 0.5, tier1Min: 0.4 });
+      (news.findByStatus as jest.Mock).mockResolvedValue([queued('t1', 0.45, 1)]);
+      (news.findById as jest.Mock).mockResolvedValue(queued('t1', 0.45, 1));
+      (news.update as jest.Mock).mockResolvedValue({});
+
+      const result = await svc.approvePending(50);
+
+      // 0.45 < 0.5 (обычный порог), но >= 0.4 (tier-1) → approved.
+      expect(result.processed).toBe(1);
+    });
+
+    it('gate disabled: impact ignored entirely', async () => {
+      const { svc, news } = await createImpactService({ mode: 'auto', gateEnabled: false });
+      (news.findByStatus as jest.Mock).mockResolvedValue([queued('low', 0.1)]);
+      (news.findById as jest.Mock).mockResolvedValue(queued('low', 0.1));
+      (news.update as jest.Mock).mockResolvedValue({});
+
+      const result = await svc.approvePending(50);
+
+      expect(result.processed).toBe(1);
+    });
+
+    it('hybrid mode: requires BOTH importance and impact thresholds', async () => {
+      const { svc, news } = await createImpactService({ mode: 'hybrid', publishMin: 0.5 });
+      (news.findByStatus as jest.Mock).mockResolvedValue([
+        queued('importanceOnly', 0.3), // importance 0.9 ok, impact 0.3 fail
+        queued('bothOk', 0.9),
+      ]);
+      (news.findById as jest.Mock).mockResolvedValue(queued('bothOk', 0.9));
+      (news.update as jest.Mock).mockResolvedValue({});
+
+      const result = await svc.approvePending(50);
+
+      expect(result.processed).toBe(1);
+      expect(news.update).toHaveBeenCalledTimes(1);
+    });
+
+    it('manual mode ignores impact gate (operator decides)', async () => {
+      const { svc, news } = await createImpactService({ mode: 'manual' });
+      (news.findByStatus as jest.Mock).mockResolvedValue([queued('low', 0.1)]);
+
+      const result = await svc.approvePending(50);
+
+      expect(result).toEqual({ processed: 0, skipped: 1, errors: 0 });
+      expect(news.update).not.toHaveBeenCalled();
+    });
+  });
 });

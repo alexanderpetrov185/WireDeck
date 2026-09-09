@@ -109,4 +109,59 @@ describe('telegram-message.formatter', () => {
       expect(msg).toContain('https://example.com/fed');
     });
   });
+
+  describe('market impact blocks (Sprint 22a)', () => {
+    const impactNews = {
+      ...fullNews,
+      impactThesis: 'Higher rates may pressure rate-sensitive sectors and support the dollar.',
+      affectedAssets: 'OIL,SPX',
+      affectedSectors: 'energy',
+      timeHorizon: 'intraday',
+    };
+
+    it('includes impact thesis and assets/horizon line in order', () => {
+      const msg = buildTelegramMessage(impactNews);
+      const lines = msg.split('\n\n');
+      expect(lines).toContain('Higher rates may pressure rate-sensitive sectors and support the dollar.');
+      expect(lines).toContain('🎯 · OIL · SPX · energy · intraday');
+      // Порядок: thesis до assets line, оба до source.
+      const thesisIdx = lines.indexOf('Higher rates may pressure rate-sensitive sectors and support the dollar.');
+      const impactIdx = lines.findIndex((l) => l.startsWith('🎯'));
+      const sourceIdx = lines.findIndex((l) => l.startsWith('Source:'));
+      expect(thesisIdx).toBeLessThan(impactIdx);
+      expect(impactIdx).toBeLessThan(sourceIdx);
+    });
+
+    it('omits impact blocks when fields are absent (legacy news unchanged)', () => {
+      const msg = buildTelegramMessage(fullNews);
+      expect(msg).not.toContain('🎯');
+      expect(msg).not.toContain('НЕ ПОДТВЕРЖДЕНО');
+    });
+
+    it('prepends unconfirmed banner when flagged', () => {
+      const msg = buildTelegramMessage({ ...impactNews, unconfirmed: true });
+      expect(msg.startsWith('⚠️ НЕ ПОДТВЕРЖДЕНО\n\n')).toBe(true);
+    });
+
+    it('does not show unconfirmed banner when flag is false/null', () => {
+      expect(buildTelegramMessage({ ...impactNews, unconfirmed: false })).not.toContain('НЕ ПОДТВЕРЖДЕНО');
+      expect(buildTelegramMessage({ ...impactNews, unconfirmed: null })).not.toContain('НЕ ПОДТВЕРЖДЕНО');
+    });
+
+    it('keeps compliance footnote last even with impact blocks and banner', () => {
+      const msg = buildTelegramMessage({ ...impactNews, unconfirmed: true }, ['Required disclosure text.']);
+      expect(msg.endsWith('Required disclosure text.')).toBe(true);
+      expect(msg.length).toBeLessThanOrEqual(3900);
+    });
+
+    it('respects length budget with extreme impact fields', () => {
+      const msg = buildTelegramMessage({
+        ...impactNews,
+        translatedText: 'b '.repeat(4000),
+        impactThesis: 't '.repeat(400),
+      });
+      expect(msg.length).toBeLessThanOrEqual(3900);
+      expect(msg).toContain('https://example.com/fed');
+    });
+  });
 });

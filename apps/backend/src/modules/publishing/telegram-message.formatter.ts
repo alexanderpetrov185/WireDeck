@@ -31,6 +31,12 @@ interface TelegramMessageNews {
   sourceName?: string | null;
   source?: string | null;
   category?: string | null;
+  // ── Sprint 22a: market-impact ──
+  impactThesis?: string | null;
+  affectedAssets?: string | null;
+  affectedSectors?: string | null;
+  timeHorizon?: string | null;
+  unconfirmed?: boolean | null;
 }
 
 /**
@@ -150,10 +156,39 @@ export function buildSourceLine(news: TelegramMessageNews): string {
 }
 
 /**
+ * Строка impacted-активов/секторов/горизонта: "🎯 OIL · SPX · intraday".
+ * Пустая строка, если нет ни активов, ни секторов, ни горизонта.
+ */
+export function buildImpactLine(news: TelegramMessageNews): string {
+  const assets = (news.affectedAssets ?? '')
+    .split(',')
+    .map((a) => a.trim())
+    .filter(Boolean);
+  const sectors = (news.affectedSectors ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const horizon = ['intraday', 'short', 'medium'].includes(news.timeHorizon ?? '')
+    ? (news.timeHorizon as string)
+    : '';
+
+  const items = [...assets, ...sectors].slice(0, 6).map((item) => `· ${item}`);
+  if (items.length === 0 && !horizon) {
+    return '';
+  }
+  const parts = ['🎯', ...items];
+  if (horizon) {
+    parts.push(`· ${horizon}`);
+  }
+  return parts.join(' ');
+}
+
+/**
  * Собирает итоговый текст Telegram-сообщения.
  * footnotes — обязательные compliance-сноски (Sprint 19), append в конец
  * с учётом length-budget (не вытесняются truncation'ом).
  * Sprint 21: до 3 хэштегов (после source, перед сносками).
+ * Sprint 22a: impact thesis + assets/horizon line + unconfirmed banner.
  * Гарантирует длину ≤ MAX_MESSAGE_LENGTH.
  */
 export function buildTelegramMessage(news: TelegramMessageNews, footnotes: string[] = []): string {
@@ -167,6 +202,11 @@ export function buildTelegramMessage(news: TelegramMessageNews, footnotes: strin
 
   const sourceLine = buildSourceLine(news);
 
+  // Sprint 22a: impact-first блоки.
+  const thesis = (news.impactThesis ?? '').trim();
+  const impactLine = buildImpactLine(news);
+  const unconfirmedBanner = news.unconfirmed === true ? '⚠️ НЕ ПОДТВЕРЖДЕНО' : '';
+
   // Sprint 21: хэштеги (до 3 шт), отдельный блок после source.
   const hashtags = buildHashtags(news);
   const hashtagLine = hashtags.length > 0 ? hashtags.join(' ') : '';
@@ -176,11 +216,20 @@ export function buildTelegramMessage(news: TelegramMessageNews, footnotes: strin
   const footnoteBlock = footnotes.length > 0 ? footnotes.join('\n') : '';
 
   const parts: string[] = [];
+  if (unconfirmedBanner) {
+    parts.push(unconfirmedBanner);
+  }
   if (title) {
     parts.push(title);
   }
   if (body) {
     parts.push(body);
+  }
+  if (thesis) {
+    parts.push(truncateAtWordBoundary(thesis, 500));
+  }
+  if (impactLine) {
+    parts.push(impactLine);
   }
   if (sourceLine) {
     parts.push(sourceLine);
@@ -198,7 +247,7 @@ export function buildTelegramMessage(news: TelegramMessageNews, footnotes: strin
   if (message.length > baseBudget && body) {
     const excess = message.length - baseBudget;
     body = truncateAtWordBoundary(body, Math.max(100, body.length - excess - 1));
-    message = [title, body, sourceLine].filter(Boolean).join('\n\n');
+    message = [unconfirmedBanner, title, body, thesis, impactLine, sourceLine].filter(Boolean).join('\n\n');
   }
 
   if (hasHashtags) {
