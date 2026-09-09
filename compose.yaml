@@ -84,6 +84,9 @@ services:
       # Стандарт: /app/compliance.lists.json. Файл монтируется volume'ом ниже;
       # если volume недоступен — в образ попадает example (из Dockerfile).
       - COMPLIANCE_LISTS_PATH=${COMPLIANCE_LISTS_PATH:-/app/compliance.lists.json}
+      # Sprint 22b: source tiers (по образцу compliance). Оператор:
+      #   cp source.tiers.example.json source.tiers.json  (затем отредактировать)
+      - SOURCE_TIERS_PATH=${SOURCE_TIERS_PATH:-/app/source.tiers.json}
       - SCHEDULER_ENABLED=${SCHEDULER_ENABLED:-false}
       - PIPELINE_INTERVAL_MS=${PIPELINE_INTERVAL_MS:-600000}
       - PIPELINE_BATCH_LIMIT=${PIPELINE_BATCH_LIMIT:-10}
@@ -98,6 +101,9 @@ services:
       # Sprint 19: compliance watchlists. Оператор:
       #   cp compliance.lists.example.json compliance.lists.json  (затем отредактировать)
       - ./compliance.lists.json:/app/compliance.lists.json:ro
+      # Sprint 22b: source tiers. Оператор:
+      #   cp source.tiers.example.json source.tiers.json  (затем отредактировать)
+      - ./source.tiers.json:/app/source.tiers.json:ro
       - backend-logs:/app/logs
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health/live || exit 1"]

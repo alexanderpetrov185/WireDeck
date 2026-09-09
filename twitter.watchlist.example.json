@@ -1,0 +1,8 @@
+[
+  {
+    "handle": "example_account",
+    "tier": 1,
+    "unconfirmed": false,
+    "note": "Template entry only. Sprint 22c will read this file; no API calls exist yet."
+  }
+]

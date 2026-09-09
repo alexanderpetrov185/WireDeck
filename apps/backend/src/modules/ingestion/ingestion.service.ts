@@ -6,6 +6,7 @@ import { NewsLanguage } from '../news/constants/news-language.enum';
 import { NewsStatus } from '../news/entities/news.entity';
 import { CollectedNews } from '../collector/interfaces/collected-news.interface';
 import { LoggerService } from '../../common/logger/logger.service';
+import { SourceTiersService } from './source-tiers.service';
 import { computeNewsHash } from './news-hash.util';
 
 export interface IngestionResult {
@@ -23,6 +24,7 @@ export class IngestionService {
     private readonly collectorService: CollectorService,
     private readonly newsService: NewsService,
     private readonly logger: LoggerService,
+    private readonly sourceTiers: SourceTiersService,
   ) {}
 
   /**
@@ -79,6 +81,8 @@ export class IngestionService {
           category: collected.category,
           hash: hash,
           publishedAt: collected.publishedAt,
+          // Sprint 22b: tier из конфига source.tiers.json (единая точка для всех коллекторов).
+          sourceTier: this.sourceTiers.resolve(collected.sourceName),
         });
 
         result.saved++;

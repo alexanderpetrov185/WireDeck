@@ -3,6 +3,7 @@ import { IngestionService } from './ingestion.service';
 import { CollectorService } from '../collector/collector.service';
 import { NewsService } from '../news/news.service';
 import { LoggerService } from '../../common/logger/logger.service';
+import { SourceTiersService } from './source-tiers.service';
 import { NewsSource } from '../news/constants/news-source.enum';
 import { NewsLanguage } from '../news/constants/news-language.enum';
 import { CollectedNews } from '../collector/interfaces/collected-news.interface';
@@ -12,6 +13,7 @@ describe('IngestionService', () => {
   let collectorService: CollectorService;
   let newsService: NewsService;
   let loggerService: LoggerService;
+  let tiersResolve: jest.Mock;
 
   const mockCollectedNews: CollectedNews[] = [
     {
@@ -65,6 +67,11 @@ describe('IngestionService', () => {
             debug: jest.fn(),
           },
         },
+        {
+          // Sprint 22b: tier default 2 (config disabled).
+          provide: SourceTiersService,
+          useValue: { resolve: jest.fn().mockReturnValue(2) },
+        },
       ],
     }).compile();
 
@@ -72,6 +79,7 @@ describe('IngestionService', () => {
     collectorService = module.get<CollectorService>(CollectorService);
     newsService = module.get<NewsService>(NewsService);
     loggerService = module.get<LoggerService>(LoggerService);
+    tiersResolve = (module.get(SourceTiersService) as { resolve: jest.Mock }).resolve;
   });
 
   it('should be defined', () => {
@@ -96,6 +104,21 @@ describe('IngestionService', () => {
     expect(loggerService.log).toHaveBeenCalledWith(
       expect.stringContaining('Collected: 2, Saved: 2, Skipped: 0, Errors: 0'),
       expect.any(String),
+    );
+  });
+
+  it('persists sourceTier resolved from SourceTiersService (Sprint 22b)', async () => {
+    tiersResolve.mockReturnValue(1);
+    (collectorService.collectFrom as jest.Mock).mockResolvedValue([mockCollectedNews[0]]);
+    (newsService.findByHash as jest.Mock).mockResolvedValue(null);
+    (newsService.findBySource as jest.Mock).mockResolvedValue(null);
+    (newsService.create as jest.Mock).mockResolvedValue({ id: 'uuid-1' });
+
+    await service.ingestFromRss();
+
+    expect(tiersResolve).toHaveBeenCalledWith('Test Feed');
+    expect(newsService.create).toHaveBeenCalledWith(
+      expect.objectContaining({ sourceName: 'Test Feed', sourceTier: 1 }),
     );
   });
 

@@ -1,0 +1,12 @@
+{
+  "bySourceName": {
+    "Reuters": 1,
+    "CNBC": 1,
+    "MarketWatch": 1,
+    "Yahoo Finance": 2,
+    "Investing.com": 2,
+    "BBC": 2,
+    "CoinDesk": 2
+  },
+  "default": 2
+}

@@ -36,6 +36,8 @@ COPY --from=builder /app/package.json ./
 # Sprint 19: копируем example в стандартный путь для default-активации.
 # Оператор переопределяет реальными списками через volume-mount в compose.
 COPY compliance.lists.example.json ./compliance.lists.json
+# Sprint 22b: source tiers — аналогично, example как default.
+COPY source.tiers.example.json ./source.tiers.json
 
 # Создаем директорию для логов
 RUN mkdir -p /app/logs

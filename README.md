@@ -134,6 +134,26 @@ docker compose logs -f backend | grep Scheduler
 > в очереди модерации. Поля `unconfirmed`/insider-источники всегда маркируются в посте «⚠️ НЕ ПОДТВЕРЖДЕНО».
 > WireDeck не даёт инвестиционных рекомендаций.
 
+### Source tiers (Sprint 22b)
+
+Каждому источнику при ingestion присваивается tier (1/2/3) из операторского конфига
+`source.tiers.json` (по образцу compliance-списков):
+
+1. `cp source.tiers.example.json source.tiers.json` и отредактируйте:
+   ```json
+   { "bySourceName": { "CNBC": 1, "Reuters": 1 }, "default": 2 }
+   ```
+2. `docker compose up -d` (файл читается при старте).
+3. Проверка: `docker compose logs backend | grep "Source tiers"`.
+
+Правила матчинга: ключ сравнивается с `feed.title` case-insensitive, сначала точно,
+затем как substring — короткий ключ `CNBC` матчит `CNBC: Top News & Analysis`.
+Tier 1 получает смягчённый порог автопубликации (`IMPACT_TIER1_MIN`, Sprint 22a).
+Критерии: **tier 1** — первоисточники макро/рынков (Reuters, CNBC, MarketWatch, WSJ);
+**tier 2** — полезный фон (Yahoo Finance, Investing.com, BBC Business, CoinDesk);
+**tier 3** — lifestyle/human-interest/спорт/мнения без цифр (в default не подключаются).
+Twitter watchlist (для Sprint 22c) — заготовка `twitter.watchlist.example.json`, код чтения пока отсутствует.
+
 В `manual`/`hybrid` неопубликованное висит в `/moderation` (badge в шапке). Если канал «молчит», проверьте в порядке: `SCHEDULER_ENABLED`, `MODERATION_MODE`, и не пустая ли очередь модерации.
 
 ### 5. Операционка

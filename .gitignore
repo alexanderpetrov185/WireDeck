@@ -95,3 +95,6 @@ config/secrets.json
 # Compliance runtime lists (operator-data, may contain real registry entries).
 # Only the fixture example file is tracked: compliance.lists.example.json
 compliance.lists.json
+# Sprint 22b: operator runtime config files (могут содержать реальный перечень источников)
+source.tiers.json
+twitter.watchlist.json
