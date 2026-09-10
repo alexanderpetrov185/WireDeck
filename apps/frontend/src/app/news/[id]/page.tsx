@@ -5,6 +5,7 @@ import { fetchFromBackend } from '@/lib/server/backend-client';
 import StatusBadge from '@/components/StatusBadge';
 import ErrorState from '@/components/ErrorState';
 import TopNav from '@/components/TopNav';
+import SoftActionForm from '@/components/SoftActionForm';
 import { NewsItem, NewsStatus } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -133,19 +134,17 @@ export default async function NewsDetailPage({
       {actionable && (
         <div className="mb-6 bg-white shadow rounded-lg p-4 flex items-center gap-6">
           {/* Нативные формы модерации: работают без клиентского JS. */}
-          <form method="post" action={`/api/admin/moderation/approve/${news.id}`}>
-            <input type="hidden" name="next" value={`/news/${news.id}`} />
-            <button type="submit" className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700">
-              Approve
-            </button>
-          </form>
-          <form method="post" action={`/api/admin/moderation/reject/${news.id}`} className="flex items-center gap-3">
-            <input type="hidden" name="next" value={`/news/${news.id}`} />
-            <input type="text" name="reason" required placeholder="Rejection reason" className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none w-64" />
-            <button type="submit" className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700">
-              Reject
-            </button>
-          </form>
+          <SoftActionForm action={`/api/admin/moderation/approve/${news.id}`} next={`/news/${news.id}`}>
+              <button type="submit" className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700">
+                Approve
+              </button>
+            </SoftActionForm>
+            <SoftActionForm action={`/api/admin/moderation/reject/${news.id}`} next={`/news/${news.id}`} className="flex items-center gap-3">
+              <input type="text" name="reason" required placeholder="Rejection reason" className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none w-64" />
+              <button type="submit" className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700">
+                Reject
+              </button>
+            </SoftActionForm>
         </div>
       )}
 

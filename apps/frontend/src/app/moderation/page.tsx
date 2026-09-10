@@ -7,6 +7,7 @@ import StatusBadge from '@/components/StatusBadge';
 import ErrorState from '@/components/ErrorState';
 import EmptyState from '@/components/EmptyState';
 import TopNav from '@/components/TopNav';
+import SoftActionForm from '@/components/SoftActionForm';
 import { NewsItem, NewsStatus, NewsStats } from '@/lib/types';
 import { formatDate, formatImportance } from '@/lib/news-labels';
 
@@ -116,24 +117,25 @@ export default async function ModerationPage({
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       {(statusFilter === 'queued' || statusFilter === 'processed' || statusFilter === 'translated') && (
                         <div className="flex items-center justify-end gap-3">
-                          {/* Нативные формы: работают без клиентского JS. */}
-                          <form method="post" action={`/api/admin/moderation/approve/${item.id}`}>
-                            <input type="hidden" name="next" value={`/moderation?status=${statusFilter}`} />
+                          {/* Мягкое действие (JS): fetch + router.refresh. Без JS — нативный submit. */}
+                          <SoftActionForm
+                            action={`/api/admin/moderation/approve/${item.id}`}
+                            next={`/moderation?status=${statusFilter}`}
+                          >
                             <button type="submit" className="text-green-600 hover:text-green-800">
                               Approve
                             </button>
-                          </form>
+                          </SoftActionForm>
                           {/* Reject свёрнут в details: нативно, без JS, не загромождает таблицу. */}
                           <details className="relative">
                             <summary className="list-none cursor-pointer text-red-600 hover:text-red-800 select-none">
                               Reject
                             </summary>
-                            <form
-                              method="post"
+                            <SoftActionForm
                               action={`/api/admin/moderation/reject/${item.id}`}
+                              next={`/moderation?status=${statusFilter}`}
                               className="absolute right-0 z-10 mt-2 w-64 bg-white border border-gray-200 rounded-md shadow-lg p-3 space-y-2"
                             >
-                              <input type="hidden" name="next" value={`/moderation?status=${statusFilter}`} />
                               <input
                                 type="text"
                                 name="reason"
@@ -147,7 +149,7 @@ export default async function ModerationPage({
                               >
                                 Confirm reject
                               </button>
-                            </form>
+                            </SoftActionForm>
                           </details>
                         </div>
                       )}

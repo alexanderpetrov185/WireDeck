@@ -14,6 +14,10 @@ COPY apps/frontend/package.json ./apps/frontend/
 COPY apps/frontend/next.config.js ./apps/frontend/
 COPY apps/frontend/tsconfig.json ./apps/frontend/
 COPY apps/frontend/next-env.d.ts ./apps/frontend/
+# Sprint 23: Tailwind/PostCSS конфиги — без них utilities не генерируются
+# при сборке в Docker (в локальной dev-сборке файлы есть на диске).
+COPY apps/frontend/tailwind.config.js ./apps/frontend/
+COPY apps/frontend/postcss.config.mjs ./apps/frontend/
 
 # Установка зависимостей с флагом --legacy-peer-deps для обхода конфликтов
 RUN npm ci --legacy-peer-deps
